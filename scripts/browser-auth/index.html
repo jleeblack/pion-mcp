@@ -69,13 +69,15 @@
         );
       }
 
-      // Sandbox mode is what lets a desktop browser act as an authenticated Pi
-      // client, and it is required while the app is still on the portal's
-      // development URL. Default it on for localhost and off elsewhere, since
-      // a production URL opened in the Pi Browser must NOT set it.
+      // Default sandbox ON, opt out with ?sandbox=0.
+      //
+      // Detecting this from location.hostname does not work: the portal serves
+      // the app from sandbox.minepi.com, so the page cannot tell "proxied
+      // sandbox" from "real production" by origin. Getting it wrong fails
+      // confusingly, and this page is a development tool, so the safe default
+      // is the development one.
       const params = new URLSearchParams(location.search);
-      const isLocal = ["localhost", "127.0.0.1"].includes(location.hostname);
-      const sandbox = params.has("sandbox") ? params.get("sandbox") !== "0" : isLocal;
+      const sandbox = params.get("sandbox") !== "0";
 
       if (typeof window.Pi === "undefined") {
         env.textContent =
@@ -86,8 +88,8 @@
           Pi.init({ version: "2.0", sandbox });
           env.textContent = "";
           document.getElementById("mode").textContent = sandbox
-            ? "Sandbox mode — pair this browser from the portal first (checklist step 6)."
-            : "Production mode — open this inside the Pi Browser.";
+            ? `Sandbox mode (loaded from ${location.hostname}). Add ?sandbox=0 for production.`
+            : `Production mode (loaded from ${location.hostname}). Must be the Pi Browser.`;
           btn.disabled = false;
         } catch (e) {
           env.textContent = "Pi.init failed: " + e.message;
