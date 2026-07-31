@@ -18,7 +18,9 @@ import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 
 const here = dirname(fileURLToPath(import.meta.url));
-const PORT = Number(process.argv[2] ?? process.env.PORT ?? 8080);
+// Defaults to 3000 to match the portal's own development-URL example, so the
+// registered URL and this server agree without extra configuration.
+const PORT = Number(process.argv[2] ?? process.env.PORT ?? 3000);
 
 const page = await readFile(join(here, "index.html"));
 
@@ -54,13 +56,22 @@ server.listen(PORT, "0.0.0.0", () => {
     }
   }
   console.log(`
-Open it INSIDE the Pi Browser, not a normal browser — the page will tell you
-if the SDK failed to load. The URL must be one registered for your app in the
-Developer Portal; the SDK will not initialise on an unregistered origin.
+TWO WAYS TO USE THIS
 
-If your app is registered against a public https URL, front this with a tunnel
-(cloudflared, ngrok) and open the tunnel URL instead. Set PI_VALIDATION_KEY if
-the portal asks you to serve /validation-key.txt for domain verification.
+  Sandbox (easiest — desktop browser, no phone):
+    1. Developer Portal checklist step 5: set the development URL to
+         http://localhost:${PORT}
+    2. Step 6: open the portal's sandbox link in this desktop browser, then
+       enter the code it gives you in Pi app -> menu -> Utilities.
+    3. That browser is now paired with your Pi account. Load
+         http://localhost:${PORT}/
+       and click Authenticate. Sandbox mode is on automatically for localhost.
+
+  Production (Pi Browser on your phone):
+    Requires checklist steps 7-8 (production URL + domain validation). Front
+    this with a tunnel, register that https URL, then open it in the Pi
+    Browser. Add ?sandbox=0 to force production mode.
+    Set PI_VALIDATION_KEY to serve /validation-key.txt for step 8.
 
 Ctrl-C when finished.`);
 });

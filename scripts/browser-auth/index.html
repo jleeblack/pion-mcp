@@ -45,6 +45,7 @@
       grant is not the same record — this page creates the one that counts.
     </p>
 
+    <p id="mode"></p>
     <p id="env" class="bad"></p>
     <button id="go" disabled>Authenticate</button>
     <div id="out"></div>
@@ -68,14 +69,25 @@
         );
       }
 
+      // Sandbox mode is what lets a desktop browser act as an authenticated Pi
+      // client, and it is required while the app is still on the portal's
+      // development URL. Default it on for localhost and off elsewhere, since
+      // a production URL opened in the Pi Browser must NOT set it.
+      const params = new URLSearchParams(location.search);
+      const isLocal = ["localhost", "127.0.0.1"].includes(location.hostname);
+      const sandbox = params.has("sandbox") ? params.get("sandbox") !== "0" : isLocal;
+
       if (typeof window.Pi === "undefined") {
         env.textContent =
-          "The Pi SDK did not load. This page must be opened inside the Pi Browser, " +
-          "at a URL registered for your app in the Developer Portal.";
+          "The Pi SDK did not load. Check your network, and that this URL matches the " +
+          "development URL registered in the Developer Portal.";
       } else {
         try {
-          Pi.init({ version: "2.0" });
+          Pi.init({ version: "2.0", sandbox });
           env.textContent = "";
+          document.getElementById("mode").textContent = sandbox
+            ? "Sandbox mode — pair this browser from the portal first (checklist step 6)."
+            : "Production mode — open this inside the Pi Browser.";
           btn.disabled = false;
         } catch (e) {
           env.textContent = "Pi.init failed: " + e.message;
