@@ -61,6 +61,32 @@ for (const [label, args] of checks) {
   if (succeeded === expectError) failures++;
 }
 
+// verify_user: a rejected token must come back as a normal result carrying
+// `valid: false`, NOT as isError — that distinction is the tool's contract.
+// Only the rejection path is exercised here; confirming a genuine token would
+// require a real user credential, which this test deliberately does not handle.
+const rejectedToken = await client.callTool({
+  name: "verify_user",
+  arguments: { access_token: "definitely-not-a-real-pi-access-token" },
+});
+const verdict = rejectedToken.structuredContent;
+const contractHeld = rejectedToken.isError !== true && verdict?.valid === false;
+summarize("verify_user (invalid token)", rejectedToken);
+console.log(
+  contractHeld
+    ? "   ✓ reported valid:false as a result, not an error"
+    : "   ✗ expected a non-error result with valid:false",
+);
+if (!contractHeld) failures++;
+
+// The token must never be echoed back to the caller.
+if (JSON.stringify(rejectedToken).includes("definitely-not-a-real")) {
+  console.log("   ✗ token leaked into the tool result");
+  failures++;
+} else {
+  console.log("   ✓ token not echoed in the result");
+}
+
 // Input validation is enforced by the schema, before any network call. The SDK
 // may surface this either as a thrown McpError or as an isError result.
 let rejected = false;

@@ -1,7 +1,8 @@
 import { z } from "zod";
 import type { CallToolResult } from "@modelcontextprotocol/sdk/types.js";
 
-import { HORIZON_URL, HorizonError } from "../horizon.js";
+import { HorizonError } from "../horizon.js";
+import { PlatformError } from "../platform.js";
 
 /** Stellar/Pi public key: 56 base32 characters beginning with G. */
 export const walletAddress = z
@@ -44,13 +45,14 @@ export function ok<T extends Record<string, unknown>>(data: T): CallToolResult {
   };
 }
 
-/** A failed tool result. `isError` keeps the failure inside the conversation. */
+/**
+ * A failed tool result. `isError` keeps the failure inside the conversation
+ * so the agent can react, rather than faulting the transport.
+ */
 export function fail(error: unknown): CallToolResult {
   const message =
-    error instanceof HorizonError
+    error instanceof HorizonError || error instanceof PlatformError
       ? error.message
-      : `Unexpected error querying ${HORIZON_URL}: ${
-          error instanceof Error ? error.message : String(error)
-        }`;
+      : `Unexpected error: ${error instanceof Error ? error.message : String(error)}`;
   return { content: [{ type: "text", text: message }], isError: true };
 }
