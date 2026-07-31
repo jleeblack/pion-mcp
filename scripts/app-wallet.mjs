@@ -41,12 +41,32 @@ if (!secret) {
 }
 
 let publicKey;
+const trimmed = secret.trim();
 try {
-  publicKey = Keypair.fromSecret(secret.trim()).publicKey();
+  publicKey = Keypair.fromSecret(trimmed).publicKey();
 } catch {
-  // Never echo the value, even partially.
-  console.error("PI_WALLET_SECRET is not a valid Stellar secret seed.");
-  console.error("Expected 56 characters beginning with S. Check for a truncated paste.");
+  // Report the *shape* of what was supplied, never the value itself. The
+  // leading character and length are enough to identify every common mistake.
+  const first = trimmed[0];
+  console.error("PI_WALLET_SECRET is not a valid Stellar secret seed.\n");
+  console.error(`  Length: ${trimmed.length} (expected 56)`);
+  console.error(`  Starts with: ${first ?? "(empty)"} (expected S)\n`);
+
+  if (first === "G") {
+    console.error("That is a PUBLIC key, not the secret — both are 56 characters, so");
+    console.error("length alone will not catch the mix-up. In the Developer Portal the");
+    console.error("public key is the address shown; the secret is the separate value you");
+    console.error("must reveal explicitly.");
+  } else if (first === "S" && trimmed.length === 56) {
+    console.error("Right shape, but the checksum fails — a character is wrong or the");
+    console.error("paste picked up a lookalike. Re-copy it directly from the portal.");
+  } else if (trimmed.split(/\s+/).length > 1) {
+    console.error("That looks like a mnemonic phrase rather than a raw seed. Pion needs");
+    console.error("the S... secret key. If the portal only offers a recovery phrase, say");
+    console.error("so — deriving a keypair from it is extra work Pion does not do yet.");
+  } else {
+    console.error("Unrecognised format. Pion expects a raw Stellar secret seed (S...).");
+  }
   process.exit(1);
 }
 
