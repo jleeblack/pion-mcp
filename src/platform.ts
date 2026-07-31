@@ -105,9 +105,12 @@ async function platformRequest<T>(
         `Pi rejected the request (${response.status} ${apiError})` +
           (apiMessage ? `: ${apiMessage}` : "") +
           (apiError === "missing_scope"
-            ? "\n\nThis is a consent problem, not a credential problem. The recipient must " +
-              "authorize the required scope for your app — for A2U that is wallet_address, " +
-              "which lets Pi resolve their wallet. Re-run Pi Sign-in requesting it."
+            ? "\n\nThis is a consent problem, not a credential problem. Your credentials are " +
+              "fine: the recipient has not authorized the required scope for your app. For " +
+              "A2U that is wallet_address, which lets Pi resolve their wallet.\n\n" +
+              "The verified way to obtain it is a Pi Browser SDK grant — the recipient runs " +
+              "Pi.authenticate for your app including wallet_address, inside the Pi Browser. " +
+              "Whether a Pi Sign-in grant also satisfies this is untested."
             : ""),
         response.status,
       );

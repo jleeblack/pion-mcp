@@ -105,14 +105,14 @@ recipient hasn't consented to receive payments from this app"* rather than a raw
 scope error — a caller seeing `missing_scope` on a 401 will reasonably conclude
 the API key is bad and go debug the wrong thing.
 
-**Status: substantially implemented, one line wrong.** `platform.ts` already
-branches on `missing_scope` before blaming the credential, and explains that it
-is a consent problem; `send_payment` routes it through `strandedReport("create")`,
-which correctly reports that no payment was created and nothing needs cleanup.
-The remaining gap is the remediation advice, which tells the caller to *"Re-run
-Pi Sign-in requesting it"* — the one route we have observed does **not** satisfy
-A2U. It should point at a Pi Browser SDK grant instead. The same stale advice
-appears in `scripts/probe-a2u.mjs`'s error handler.
+**Status: implemented 2026-07-31.** `platform.ts` branches on `missing_scope`
+before blaming the credential and explains it as a consent problem;
+`send_payment` routes it through `strandedReport("create")`, which correctly
+reports that no payment was created and nothing needs cleanup. Both its
+remediation text and `probe-a2u.mjs`'s previously pointed the caller at Pi
+Sign-in; they now point at the Pi Browser SDK grant, which is the route we have
+actually verified, while recording the Sign-in route as untested rather than
+dead.
 
 **Still open pending a successful create:** payment identifier length (expected
 fit) and whether the create response carries the recipient wallet address. The
@@ -164,6 +164,18 @@ and wallet secret genuinely are server-owned.
      Both details are load-bearing and should not be "tidied".
    - Whether `POST /v2/payments` returns the recipient wallet address on the
      create response, as assumed, or requires a separate lookup.
+   - **Does a Pi Sign-in `wallet_address` consent satisfy A2U create?**
+     **Untested in both directions** — we have never confirmed that it does, and
+     we have never cleanly demonstrated that it does not. The one experiment
+     touching this is confounded (above). What *is* verified is the Browser SDK
+     route, so that is what our remediation text recommends; it recommends the
+     known-good path without asserting the other is dead.
+
+     This question decides the reach of the "agent pays human" primitive. If
+     Sign-in consent works, A2U can pay anyone who has completed an OAuth flow
+     anywhere. If it does not, A2U is limited to users onboarded through the Pi
+     Browser — materially narrower than the docs imply. Worth an experiment of
+     its own rather than inference from adjacent failures.
 
 ## Resolved
 
@@ -190,18 +202,24 @@ and wallet secret genuinely are server-owned.
   rather than a code/issuer pair.
 - Pi uids are 36-character UUIDs, not opaque short ids. Relevant because the
   A2U memo budget is 28 bytes.
-- **A Pi Sign-in `wallet_address` grant does not appear to satisfy A2U.**
-  Reproduced with a valid server API key, an attached app wallet, and a fresh
-  token whose `/v2/me` lists `wallet_address` among granted scopes: create
-  still fails with `missing_scope` for that same uid. The two surfaces read
-  different grant records. This matches the documented split — identity flows
-  out of the Pi Browser via Sign-in, payment authorization does not — and
-  suggests A2U recipients must authorize through the Pi Browser SDK
-  (`Pi.authenticate`), not Pi Sign-in. **Unconfirmed**; the remaining
-  alternative is that the OAuth client and the server API key belong to
-  different apps, which would make the uid meaningless to the paying app.
-  If it holds, the "agent pays human" primitive is limited to users onboarded
-  through the Pi Browser, which is materially narrower than the docs imply.
+- **One confounded observation involving Pi Sign-in — draws no conclusion.**
+  With a valid server API key, an attached app wallet, and a fresh Sign-in token
+  whose `/v2/me` listed `wallet_address` among granted scopes, A2U create still
+  failed with `missing_scope` for that uid.
+
+  This was previously written up here as evidence that a Sign-in grant does not
+  satisfy A2U. **That conclusion is withdrawn** (2026-07-31) — the experiment
+  cannot support it. At least two explanations remain live and the data does not
+  separate them: either the two surfaces keep different grant records, or the
+  OAuth client and the server API key belong to different apps, in which case
+  that uid was meaningless to the paying app and the result says nothing about
+  Sign-in at all. The decisive check is cheap and still unrun: compare the uid
+  from that experiment against a Browser-SDK uid for the same human and the same
+  app. Same uid implicates the grant records; different uid implicates the app
+  configuration.
+
+  Recorded because the data exists, not because it establishes anything. See the
+  open question below.
 - **A2U requires the recipient to have granted the `wallet_address` scope.**
   Undocumented in the A2U guide, and it is the recipient's consent that is
   missing, not the app's. `POST /v2/payments` returns `401 missing_scope` —

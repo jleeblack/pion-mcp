@@ -97,11 +97,14 @@ async function main() {
     if (apiError === "missing_scope") {
       console.error(
         "\nThis is a CONSENT problem, not a credential problem.\n" +
-          "The recipient must authorize the wallet_address scope for your app so Pi\n" +
-          "can resolve their wallet. Re-run sign-in requesting it:\n\n" +
-          '  $env:PION_SIGNIN_SCOPES = "username wallet_address"\n' +
-          "  node scripts/pi-signin.mjs <client-id>\n\n" +
-          "Approve the wallet_address prompt in the Pi Browser, then re-run this probe.",
+          "Your API key is fine. The recipient has not authorized the wallet_address\n" +
+          "scope for your app, so Pi will not resolve their wallet.\n\n" +
+          "The verified route is a Pi Browser SDK grant: have the recipient open the\n" +
+          "app in the Pi Browser and authenticate with wallet_address among the\n" +
+          "requested scopes — site/pay.html and scripts/browser-auth/index.html both\n" +
+          "do this. Then re-run this probe with the same uid.\n\n" +
+          "Whether a Pi Sign-in grant (scripts/pi-signin.mjs) also satisfies A2U is an\n" +
+          "open question — untested in both directions. If you try it, record the result.",
       );
     } else if (created.status === 401 || created.status === 403) {
       console.error("The server API key was rejected.");
