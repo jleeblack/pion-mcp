@@ -6,6 +6,8 @@
  * read-only chain queries against Pi's public Horizon API. No API keys, no
  * wallet secrets, no user consent required, and nothing here can move value.
  */
+import { createRequire } from "node:module";
+
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
 
@@ -14,8 +16,13 @@ import { registerGetAccountPayments } from "./tools/get-account-payments.js";
 import { registerGetWalletBalance } from "./tools/get-wallet-balance.js";
 import { registerQueryTransaction } from "./tools/query-transaction.js";
 
-// Kept in sync with package.json by hand — it is the only duplicated string.
-const VERSION = "0.1.0";
+// Single source of truth for the version. `../package.json` resolves to the
+// package root from both dist/index.js and src/index.ts, so this is correct
+// whether running the build or the sources directly. Resolved at runtime
+// rather than imported so the JSON never has to be copied into dist/.
+const { version: VERSION } = createRequire(import.meta.url)("../package.json") as {
+  version: string;
+};
 
 const NETWORK = HORIZON_URL.includes("testnet") ? "Pi Testnet" : `custom (${HORIZON_URL})`;
 
