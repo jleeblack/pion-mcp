@@ -121,5 +121,12 @@ and wallet secret genuinely are server-owned.
   rather than a code/issuer pair.
 - Pi uids are 36-character UUIDs, not opaque short ids. Relevant because the
   A2U memo budget is 28 bytes.
+- **A2U requires the recipient to have granted the `wallet_address` scope.**
+  Undocumented in the A2U guide, and it is the recipient's consent that is
+  missing, not the app's. `POST /v2/payments` returns `401 missing_scope` —
+  a status that otherwise means "bad API key", so the body must be read to
+  tell a consent problem from a credential problem. Sending Pi to a user
+  therefore requires them to have signed in and approved wallet_address first;
+  a uid alone is not sufficient.
 - `/v2/me` returns an `app_id` and a `receiving_email` flag that the platform
   docs do not mention.

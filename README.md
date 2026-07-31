@@ -55,6 +55,11 @@ of identity: a client-supplied uid or username means nothing on its own.
 This one spends real money and cannot be undone. It is not registered at all
 unless armed, so a default server does not even advertise it to the agent.
 
+**The recipient must have granted your app the `wallet_address` scope.** A uid
+alone is not enough — Pi needs that consent to resolve their wallet, and
+refuses payment creation with `missing_scope` otherwise. This is the
+recipient's consent, not your credentials.
+
 Arming requires **all four**, and Pi restricts A2U to testnet, so a non-testnet
 Horizon URL is refused outright:
 

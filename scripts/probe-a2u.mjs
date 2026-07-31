@@ -91,8 +91,20 @@ async function main() {
     console.error(`Create FAILED with HTTP ${created.status}.`);
     console.error(created.text.slice(0, 600) || "(empty body)");
     console.error("\nNothing was created and nothing needs cleaning up.");
-    if (created.status === 401 || created.status === 403) {
-      console.error("That status means the server API key was rejected.");
+    // A 401 here is ambiguous: it can mean a bad key OR that the recipient
+    // has not granted a scope. The body says which — read it, don't guess.
+    const apiError = created.json?.error;
+    if (apiError === "missing_scope") {
+      console.error(
+        "\nThis is a CONSENT problem, not a credential problem.\n" +
+          "The recipient must authorize the wallet_address scope for your app so Pi\n" +
+          "can resolve their wallet. Re-run sign-in requesting it:\n\n" +
+          '  $env:PION_SIGNIN_SCOPES = "username wallet_address"\n' +
+          "  node scripts/pi-signin.mjs <client-id>\n\n" +
+          "Approve the wallet_address prompt in the Pi Browser, then re-run this probe.",
+      );
+    } else if (created.status === 401 || created.status === 403) {
+      console.error("The server API key was rejected.");
     } else if (created.status === 400) {
       console.error(
         "A 400 here usually means the uid is not a valid user of this app.",

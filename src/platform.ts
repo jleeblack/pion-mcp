@@ -85,6 +85,34 @@ async function platformRequest<T>(
   }
 
   if (response.status === 401 || response.status === 403) {
+    // Do NOT assume a 401 means bad credentials. /v2/payments returns 401 with
+    // {"error":"missing_scope"} when the *recipient* has not granted
+    // wallet_address — nothing to do with the caller's key. The body carries
+    // the real reason, so read it before blaming the credential.
+    const raw = (await response.text().catch(() => "")).trim();
+    let apiError: string | undefined;
+    let apiMessage: string | undefined;
+    try {
+      const parsed = JSON.parse(raw) as { error?: string; error_message?: string };
+      apiError = parsed.error;
+      apiMessage = parsed.error_message;
+    } catch {
+      // Empty or non-JSON body — fall back to the generic wording below.
+    }
+
+    if (apiError !== undefined) {
+      throw new PlatformAuthError(
+        `Pi rejected the request (${response.status} ${apiError})` +
+          (apiMessage ? `: ${apiMessage}` : "") +
+          (apiError === "missing_scope"
+            ? "\n\nThis is a consent problem, not a credential problem. The recipient must " +
+              "authorize the required scope for your app — for A2U that is wallet_address, " +
+              "which lets Pi resolve their wallet. Re-run Pi Sign-in requesting it."
+            : ""),
+        response.status,
+      );
+    }
+
     const subject = auth.scheme === "Bearer" ? "access token" : "server API key";
     throw new PlatformAuthError(
       response.status === 401
@@ -95,7 +123,6 @@ async function platformRequest<T>(
   }
 
   if (!response.ok) {
-    // 401 responses come back with an empty body, so never assume JSON here.
     const body = await response.text().catch(() => "");
     const detail = body.trim().slice(0, 300);
     throw new PlatformError(

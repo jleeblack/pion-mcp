@@ -23,7 +23,11 @@ const PORT = Number(process.env.PION_SIGNIN_PORT ?? 3000);
 const REDIRECT_URI = `http://localhost:${PORT}/callback`;
 const AUTHORIZE_URL = "https://accounts.pinet.com/oauth/authorize";
 const PLATFORM_URL = (process.env.PION_PLATFORM_URL ?? "https://api.minepi.com").replace(/\/+$/, "");
-const SCOPES = process.env.PION_SIGNIN_SCOPES ?? "username";
+// wallet_address is included by default because this helper exists to set up
+// A2U testing, and Pi rejects payment creation with missing_scope unless the
+// recipient has granted it. Narrow with PION_SIGNIN_SCOPES=username if you
+// only want identity.
+const SCOPES = process.env.PION_SIGNIN_SCOPES ?? "username wallet_address";
 const TIMEOUT_MS = 180_000;
 
 const clientId = process.argv[2] ?? process.env.PI_OAUTH_CLIENT_ID;
@@ -122,7 +126,9 @@ function shutdown(code) {
 
 server.listen(PORT, () => {
   console.log(`Listening on ${REDIRECT_URI}`);
-  console.log("This must exactly match the redirect URI registered in the Developer Portal.\n");
+  console.log("This must exactly match the redirect URI registered in the Developer Portal.");
+  console.log(`Requesting scopes: ${SCOPES}`);
+  console.log("Approve every scope in the Pi Browser — A2U needs wallet_address.\n");
   console.log("Opening your browser. If it does not open, visit:\n");
   console.log(`  ${authUrl}\n`);
 
