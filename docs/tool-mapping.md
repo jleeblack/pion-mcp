@@ -10,16 +10,16 @@ Derived from `pi-sdk-notes.md`. This file defines the v0.1 build scope.
 ### Tier A — zero-permission chain reads (Horizon/Stellar)
 No API key, no user consent needed. Safest possible starting tools.
 
-| Tool | Backing call | Notes |
-|---|---|---|
-| `get_wallet_balance` | Horizon `GET /accounts/{address}` | Pi + any custom token balances |
-| `get_account_payments` | Horizon `GET /accounts/{address}/payments` | payment history |
-| `query_transaction` | Horizon `GET /transactions/{txid}` | verify a specific tx |
+| Tool | Backing call | Status | Notes |
+|---|---|---|---|
+| `get_wallet_balance` | Horizon `GET /accounts/{address}` | ✅ shipped v0.1.0 | Pi + any custom token balances |
+| `get_account_payments` | Horizon `GET /accounts/{address}/payments` | ✅ shipped v0.1.0 | payment history |
+| `query_transaction` | Horizon `GET /transactions/{txid}` | ✅ shipped v0.1.0 | verify a specific tx |
 
 ### Tier B — Platform API with user access token
-| Tool | Backing call | Notes |
-|---|---|---|
-| `verify_user` | `GET /v2/me` (Bearer token) | validates a token, returns uid/username |
+| Tool | Backing call | Status | Notes |
+|---|---|---|---|
+| `verify_user` | `GET /v2/me` (Bearer token) | ✅ built, unreleased | validates a token, returns uid/username |
 
 ### Tier C — Platform API with Server API Key
 | Tool | Backing call | Notes |
@@ -45,23 +45,51 @@ No API key, no user consent needed. Safest possible starting tools.
 
 ---
 
-## v0.1 build scope (Step 3)
+## Build status
 
-Ship Tier A only: `get_wallet_balance`, `get_account_payments`, `query_transaction`.
+**v0.1.0 / v0.1.1 — Tier A, published to npm.** `get_wallet_balance`,
+`get_account_payments`, `query_transaction`. Zero permissions, zero secrets,
+verified end-to-end against live testnet Horizon. The full MCP loop
+(Claude ⇄ Pion ⇄ Pi chain) is proven.
 
-Why: zero permissions, zero secrets, works against public testnet Horizon immediately,
-and proves the full MCP loop (Claude ⇄ Pion ⇄ Pi chain) with no regulatory or
-security surface at all.
+**Unreleased — Tier B.** `verify_user` is built and on `main`, not yet published.
 
-v0.2 adds Tier B/C behind env-config (`PI_SERVER_API_KEY`, `PI_WALLET_SECRET`),
-testnet-default with explicit opt-in for anything that moves value.
+**Next — Tier C.** A2U payments behind env-config (`PI_SERVER_API_KEY`,
+`PI_WALLET_SECRET`), testnet-default with explicit opt-in for anything that
+moves value.
+
+### Correction to the original plan
+
+This file previously said Tier B would sit behind env-config alongside Tier C.
+That was wrong, and the shipped implementation departs from it: a user access
+token is **per-user and per-session**, not server configuration. `verify_user`
+therefore takes the token as a call argument and never reads it from the
+environment. Env-config remains correct for Tier C, where the server API key
+and wallet secret genuinely are server-owned.
 
 ## Design implications recorded
 1. U2A initiation is architecturally impossible from MCP — Pion positions as
    (a) read layer, (b) A2U sender, (c) U2A *backend* companion to a Pi-Browser frontend.
 2. A2U = the "agent pays human" primitive; combined with the allowance-delegation
    concept, the app wallet becomes the agent's leashed spending account.
-3. Open questions to verify in Step 3 against live testnet:
+3. Open questions — still unanswered after the Tier A/B build:
    - Mainnet Horizon URL + network passphrase
-   - Whether GET /payments requires the payment to belong to our app
-   - A2U end-to-end latency and failure modes (incomplete payment recovery)
+   - Whether GET /payments requires the payment to belong to our app (Tier C)
+   - A2U end-to-end latency and failure modes (incomplete payment recovery) (Tier C)
+   - `GET /v2/me` success-response shape. The implementation follows the platform
+     docs, not observed traffic: `uid` is treated as guaranteed, `username` and
+     `credentials.scopes` as scope-dependent and optional. Needs a real user
+     token to confirm.
+
+## Observed during the build (not in the source docs)
+
+- Horizon's `/accounts/{id}/payments` returns more than classic payments on Pi
+  testnet — Soroban `invoke_host_function` records appear in the same feed, and
+  they carry no asset fields. Do not assume every record is a native transfer.
+- Horizon always emits a `_links.next` cursor, even past the end of a result
+  set, so its presence is not a "more results" signal.
+- `GET /v2/me` returns **401 with an empty body** — no JSON error document.
+  Error handling that assumes a parseable body will throw on the most common
+  failure case.
+- Accounts hold `liquidity_pool_shares` balances keyed by `liquidity_pool_id`
+  rather than a code/issuer pair.
