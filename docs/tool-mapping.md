@@ -111,11 +111,26 @@ and wallet secret genuinely are server-owned.
      and that is the half that matters for security.
    - A2U end-to-end latency and failure modes (incomplete payment recovery) (Tier C)
    - **Length of a Pi payment identifier.** A2U requires it as the Stellar text
-     memo, which is capped at 28 bytes. Now looks likely to be a real problem:
-     Pi uses 36-character UUIDs for uids in the same API, and 36 > 28. If
-     payment ids follow the same convention the memo approach cannot work as
-     written. `send_payment` checks after create and before signing, so it
-     fails safely — but the answer decides whether the design holds.
+     memo, capped at 28 bytes. **Expected fit, pending probe confirmation**
+     (revised 2026-07-31, was "likely too long").
+
+     Two live U2A payments returned ids of the form
+     `WmVLw2vEdNLe9GfbH8stVT0oW5YL` — 28 characters of base62-style ASCII, so
+     exactly 28 bytes, exactly the `memo_text` limit. Landing precisely on the
+     cap reads as deliberate: Pi appears to have sized payment ids to fit a
+     Stellar memo. The earlier worry — that ids would follow the 36-character
+     UUID convention Pi uses for uids — is contradicted by direct evidence.
+     A2U ids are expected to share the format, both being records in the same
+     `/v2/payments` collection. `probe-a2u.mjs` is still the confirmation for
+     A2U specifically; a deviation is now the surprise rather than the
+     expectation.
+
+     Consequence: the fit is exact, with **zero headroom**. `send_payment` adds
+     the bare identifier (`Memo.text(payment.identifier)`) and decorates it with
+     nothing, which is precisely what makes it work — any prefix or tag would
+     overflow. Its pre-signing guard is `> MAX_MEMO_BYTES`, not `>=`, so a
+     28-byte id passes; an off-by-one there would have rejected every payment.
+     Both details are load-bearing and should not be "tidied".
    - Whether `POST /v2/payments` returns the recipient wallet address on the
      create response, as assumed, or requires a separate lookup.
 
@@ -165,12 +180,20 @@ and wallet secret genuinely are server-owned.
   a uid alone is not sufficient.
 - `/v2/me` returns an `app_id` and a `receiving_email` flag that the platform
   docs do not mention.
-- **A U2A payment identifier fits `[A-Za-z0-9_-]` and is at most 64 characters**
-  — the approve function validates against that charset before interpolating the
-  id into a request path, and a real payment passed through it (2026-07-31).
-  That bounds the format but does not pin the length, so it does not settle the
-  28-byte memo question on its own. Note that a U2A id is a free data point on
-  that question: both directions are records in the same `/v2/payments`
-  collection and are very likely to share a format, so the id logged by a U2A
-  run is worth measuring as a cross-check against the A2U probe. Likely, not
-  proven — `probe-a2u.mjs` remains the authoritative answer for A2U.
+- **A U2A payment identifier is 28 characters of base62-style ASCII** — e.g.
+  `WmVLw2vEdNLe9GfbH8stVT0oW5YL`, measured across two live runs (2026-07-31).
+  Exactly 28 bytes, exactly the Stellar `memo_text` cap. See the memo entry
+  under open questions for what that implies for `send_payment`.
+- **An undocumented `platform` scope comes back on every grant.** Requesting
+  only `payments` through the Browser SDK returned `payments, platform`; Pi
+  Sign-in independently returned `platform` with `username`. Two auth surfaces,
+  same extra scope, no documentation. Recorded in `pi-sdk-notes.md`. Code that
+  diffs granted scopes against requested ones must tolerate extras.
+- **First live U2A payment** (2026-07-31), kept as a fixture for validating the
+  read tools against real data: txid
+  `911c3f802a8d1d762d23a1286700aeb1250c86355b43647a59016dc25d86a4f2`, 0.314
+  Test-Pi. Public chain data, so it is safe to record here; the recipient uid
+  from the same run is deliberately **not** recorded — see below.
+- **App-scoped uids stay out of this repo.** A uid is anti-correlation-designed
+  across apps, but within this app it identifies a real person, and this
+  repository is public. Keep uids in local env or notes, not in committed docs.

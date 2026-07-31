@@ -21,6 +21,16 @@ Understanding which layer an operation lives in determines whether Pion can expo
 - **Consequence for Pion: none of this is directly callable from an MCP server.**
   U2A payment *initiation* requires the user to be inside the Pi Browser.
 
+**Observed: an undocumented `platform` scope.** A `Pi.authenticate(["payments"])`
+call returned `payments, platform` — a scope we did not request and that appears
+in no documented scope list. Not a one-off, and not specific to the Browser SDK:
+Pi Sign-in independently returned `platform` alongside `username` (see
+`tool-mapping.md`). Two different auth surfaces both grant it, so it looks like
+something Pi attaches to every grant rather than a per-app quirk. Purpose
+unknown. Do not depend on it, and do not treat a returned scope set as equal to
+the requested one — code that diffs granted against requested will see an extra
+entry it never asked for.
+
 **`sandbox` — where the page runs, not which chain it touches.**
 `Pi.init({ version: "2.0", sandbox: true })` points the app at the sandbox
 environment at `sandbox.minepi.com`, reached through a development URL configured
