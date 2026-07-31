@@ -1,7 +1,7 @@
 # Pion Tool Mapping (Step 2 deliverable)
 
 Sorting of the Pi developer surface into what Pion can expose as MCP tools.
-Derived from `pi-sdk-notes.md`. This file defines the v0.1 build scope.
+Derived from `pi-sdk-notes.md`. This file tracks the build scope tier by tier.
 
 ---
 
@@ -19,7 +19,7 @@ No API key, no user consent needed. Safest possible starting tools.
 ### Tier B — Platform API with user access token
 | Tool | Backing call | Status | Notes |
 |---|---|---|---|
-| `verify_user` | `GET /v2/me` (Bearer token) | ✅ built, unreleased | validates a token, returns uid/username |
+| `verify_user` | `GET /v2/me` (Bearer token) | ✅ shipped v0.2.0 | validates a token, returns uid/username |
 
 ### Tier C — Platform API with Server API Key
 | Tool | Backing call | Notes |
@@ -52,7 +52,9 @@ No API key, no user consent needed. Safest possible starting tools.
 verified end-to-end against live testnet Horizon. The full MCP loop
 (Claude ⇄ Pion ⇄ Pi chain) is proven.
 
-**Unreleased — Tier B.** `verify_user` is built and on `main`, not yet published.
+**v0.2.0 — Tier B, published to npm.** `verify_user`. Rejection path verified
+against the live Platform API; the success path still needs a real user token
+(see open questions below).
 
 **Next — Tier C.** A2U payments behind env-config (`PI_SERVER_API_KEY`,
 `PI_WALLET_SECRET`), testnet-default with explicit opt-in for anything that

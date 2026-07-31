@@ -3,7 +3,7 @@
 **Model Context Protocol server for Pi Network** — connect AI agents
 (Claude, Cursor, and any MCP-compatible client) to Pi Network chain data.
 
-> ⚠️ v0.1 — testnet, read-only.
+> ⚠️ v0.2 — testnet, read-only. Nothing here can move value.
 
 ## Why "Pion"?
 The pion is the π meson — the particle physicists named after pi.
