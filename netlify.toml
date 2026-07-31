@@ -1,0 +1,16 @@
+# Netlify configuration for the pionmcp.com static site + U2A payment backend.
+#
+# The site is plain HTML in site/ — there is nothing to compile, so the build
+# command is a no-op. Without it Netlify would auto-detect package.json and run
+# the TypeScript build for the MCP server, which has nothing to do with hosting.
+
+[build]
+  command = "echo 'static site — no build step'"
+  publish = "site"
+  functions = "netlify/functions"
+
+# Shared code lives in netlify/lib/, outside the functions directory, so Netlify
+# does not register it as a function of its own. esbuild follows the relative
+# import and bundles it into each function.
+[functions]
+  node_bundler = "esbuild"

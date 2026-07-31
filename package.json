@@ -35,6 +35,7 @@
     "start": "node dist/index.js",
     "smoke": "node scripts/smoke.mjs",
     "arming": "node scripts/arming-test.mjs",
+    "u2a": "node scripts/u2a-test.mjs",
     "probe:a2u": "node scripts/probe-a2u.mjs",
     "diagnose:a2u": "node scripts/diagnose-a2u.mjs",
     "identify:app": "node scripts/identify-app.mjs",

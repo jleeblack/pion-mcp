@@ -1,0 +1,299 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="robots" content="noindex" />
+    <title>Pion — U2A payment test</title>
+    <script src="https://sdk.minepi.com/pi-sdk.js"></script>
+    <style>
+      :root { --accent: #6b3fa0; }
+      body {
+        font: 16px/1.55 system-ui, sans-serif;
+        margin: 0 auto;
+        padding: 2rem 1.25rem 4rem;
+        max-width: 34rem;
+      }
+      h1 { font-size: 1.3rem; margin: 0 0 0.5rem; }
+      h2 {
+        font-size: 0.72rem;
+        letter-spacing: 0.14em;
+        text-transform: uppercase;
+        color: #67676f;
+        margin: 2rem 0 0.6rem;
+      }
+      p { margin: 0.7rem 0; }
+      button {
+        font: inherit;
+        padding: 0.8rem 1.25rem;
+        width: 100%;
+        border: 0;
+        border-radius: 8px;
+        background: var(--accent);
+        color: #fff;
+        margin-top: 0.5rem;
+      }
+      button[disabled] { opacity: 0.45; }
+      code, pre { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; }
+      pre {
+        background: #f4f4f6;
+        padding: 0.75rem;
+        border-radius: 8px;
+        overflow-x: auto;
+        font-size: 13px;
+        margin: 0;
+      }
+      .bad { color: #b00020; }
+      .good { color: #067647; }
+      .muted { color: #67676f; font-size: 0.9rem; }
+
+      /* The uid is the point of the exercise — make it unmissable. */
+      #uidcard { display: none; margin-top: 1.5rem; padding: 1rem 1.15rem;
+                 border: 2px solid var(--accent); border-radius: 10px; }
+      #uidcard .label { font-size: 0.7rem; letter-spacing: 0.16em;
+                        text-transform: uppercase; color: var(--accent); }
+      #uid { display: block; margin-top: 0.4rem; font-size: 1.05rem;
+             font-weight: 600; word-break: break-all; }
+
+      #verdict { display: none; margin-top: 1.5rem; padding: 0.9rem 1.1rem;
+                 border-radius: 10px; font-weight: 600; }
+      #verdict.ok { background: #e6f4ec; color: #05512f; }
+      #verdict.no { background: #fdecef; color: #8c0019; }
+
+      #log { list-style: none; padding: 0; margin: 0.4rem 0 0;
+             font-size: 13px; font-family: ui-monospace, Menlo, monospace; }
+      #log li { padding: 0.3rem 0; border-bottom: 1px solid #e6e6ea; }
+      #log li:last-child { border-bottom: 0; }
+
+      @media (prefers-color-scheme: dark) {
+        body { background: #16161a; color: #eee; }
+        pre { background: #24242b; }
+        #log li { border-color: #2c2c34; }
+        #verdict.ok { background: #10301f; color: #7fe0ab; }
+        #verdict.no { background: #3a121b; color: #ff9aa9; }
+      }
+    </style>
+  </head>
+  <body>
+    <h1>User-to-App payment test</h1>
+    <p class="muted">
+      Sends <strong>0.314 Test-Pi</strong> with the memo
+      <code>Pion setup test</code>, exercising the full U2A round trip:
+      Pi Browser initiates, our Netlify functions approve and complete.
+    </p>
+
+    <p id="mode" class="muted"></p>
+    <p id="env" class="bad"></p>
+
+    <button id="auth" disabled>Authenticate</button>
+
+    <div id="uidcard">
+      <span class="label">Your uid for this app</span>
+      <code id="uid"></code>
+      <p class="muted" style="margin-bottom:0">
+        App-scoped: the same person has a different uid in every Pi app.
+      </p>
+    </div>
+
+    <button id="pay" disabled>Pay 0.314 Test-Pi</button>
+
+    <div id="verdict"></div>
+
+    <h2>Flow</h2>
+    <ul id="log"><li class="muted">Nothing yet.</li></ul>
+
+    <script>
+      const AMOUNT = 0.314;
+      const MEMO = "Pion setup test";
+      const SCOPES = ["payments"];
+
+      const $ = (id) => document.getElementById(id);
+      const logEl = $("log");
+      const esc = (s) =>
+        String(s).replace(/[&<>]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;" })[c]);
+
+      let cleared = false;
+      function log(msg, cls) {
+        if (!cleared) { logEl.innerHTML = ""; cleared = true; }
+        const li = document.createElement("li");
+        if (cls) li.className = cls;
+        li.innerHTML = esc(msg);
+        logEl.appendChild(li);
+        li.scrollIntoView({ block: "nearest" });
+      }
+
+      function detail(obj) {
+        const pre = document.createElement("pre");
+        pre.textContent = JSON.stringify(obj, null, 2);
+        const li = document.createElement("li");
+        li.appendChild(pre);
+        logEl.appendChild(li);
+      }
+
+      function verdict(ok, msg) {
+        const el = $("verdict");
+        el.className = ok ? "ok" : "no";
+        el.textContent = msg;
+        el.style.display = "block";
+      }
+
+      /** POST to one of our functions. Returns the status alongside the body:
+          a non-200 is an answer, not an exception. */
+      async function callFunction(name, payload) {
+        try {
+          const res = await fetch(`/.netlify/functions/${name}`, {
+            method: "POST",
+            headers: { "content-type": "application/json" },
+            body: JSON.stringify(payload),
+          });
+          let data = null;
+          try { data = await res.json(); } catch { /* non-JSON error page */ }
+          return { ok: res.ok, status: res.status, data };
+        } catch (e) {
+          return { ok: false, status: 0, data: { message: `Network error: ${e.message}` } };
+        }
+      }
+
+      // ---- Pi SDK callbacks -------------------------------------------------
+
+      // The server decides whether this payment may proceed; the page only
+      // relays the id and reports what came back.
+      async function onReadyForServerApproval(paymentId) {
+        log(`onReadyForServerApproval — paymentId ${paymentId}`);
+        const r = await callFunction("approve", { paymentId });
+        if (r.ok && r.data?.approved) {
+          log("approved by our server — waiting for the on-chain transaction", "good");
+        } else {
+          log(`approval failed (HTTP ${r.status})`, "bad");
+          detail(r.data);
+          verdict(false, "Not paid — the server declined or could not approve this payment.");
+        }
+      }
+
+      // A 200 from our complete function is the only thing that establishes the
+      // payment happened. The SDK reaching this callback does not.
+      async function onReadyForServerCompletion(paymentId, txid) {
+        log(`onReadyForServerCompletion — txid ${txid}`);
+        const r = await callFunction("complete", { paymentId, txid });
+        if (r.ok && r.data?.completed) {
+          log("completed — Pi confirmed the payment", "good");
+          detail(r.data);
+          verdict(true, `Paid. ${AMOUNT} Test-Pi confirmed by the Pi Platform API.`);
+        } else {
+          log(`completion failed (HTTP ${r.status})`, "bad");
+          detail(r.data);
+          verdict(false, "Not confirmed — the transaction exists but completion did not return 200.");
+        }
+        $("pay").disabled = false;
+      }
+
+      function onCancel(paymentId) {
+        log(`cancelled — paymentId ${paymentId}`, "bad");
+        verdict(false, "Cancelled. Nothing was paid.");
+        $("pay").disabled = false;
+      }
+
+      function onError(error, payment) {
+        log(`error — ${error?.message ?? error}`, "bad");
+        if (payment) detail(payment);
+        verdict(false, "Payment errored. Nothing was confirmed.");
+        $("pay").disabled = false;
+      }
+
+      // A payment left dangling by an earlier session blocks authentication
+      // until it is resolved, so it goes straight to the same complete function.
+      async function onIncompletePaymentFound(payment) {
+        log(`incomplete payment found — ${payment?.identifier}`, "bad");
+        const txid = payment?.transaction?.txid;
+        const r = await callFunction("complete", {
+          paymentId: payment?.identifier,
+          txid,
+        });
+        if (r.ok && r.data?.completed) {
+          log("stale payment completed — you can continue", "good");
+        } else {
+          log(`could not complete the stale payment (HTTP ${r.status})`, "bad");
+          detail(r.data);
+        }
+      }
+
+      // ---- init -------------------------------------------------------------
+
+      // Default sandbox OFF, opt in with ?sandbox=1.
+      //
+      // Deliberately the opposite default to scripts/browser-auth/index.html.
+      // That page is a desktop development tool, so sandbox is its normal case;
+      // this page exists for the checklist test run in the real Pi Browser on a
+      // phone, where sandbox mode is wrong. Defaulting each page to its own
+      // primary use beats a shared default that is wrong half the time.
+      //
+      // Sandbox is not the same axis as Mainnet/Testnet: the network is fixed
+      // at app registration in the Developer Portal, so a testnet-registered
+      // app moves Test-Pi either way.
+      const sandbox = new URLSearchParams(location.search).get("sandbox") === "1";
+
+      if (typeof window.Pi === "undefined") {
+        $("env").textContent =
+          "The Pi SDK did not load. Check your network, and that this URL matches the " +
+          "URL registered in the Developer Portal.";
+      } else {
+        try {
+          Pi.init({ version: "2.0", sandbox });
+          // "Not sandbox" means the real SDK flow, not real money — the app's
+          // network is whatever it was registered as, so say that rather than
+          // "production", which reads as mainnet.
+          $("mode").textContent = sandbox
+            ? `Sandbox mode (desktop portal harness, loaded from ${location.hostname}). ` +
+              `Drop ?sandbox=1 for the on-phone Pi Browser test.`
+            : `Pi Browser mode (loaded from ${location.hostname}) — the real SDK flow, ` +
+              `on whichever network this app is registered for. Add ?sandbox=1 for the desktop sandbox.`;
+          $("auth").disabled = false;
+        } catch (e) {
+          $("env").textContent = "Pi.init failed: " + e.message;
+        }
+      }
+
+      $("auth").addEventListener("click", async () => {
+        $("auth").disabled = true;
+        log("authenticating with scope: payments");
+        try {
+          const auth = await Pi.authenticate(SCOPES, onIncompletePaymentFound);
+          // uid and granted scopes only — the access token is a credential and
+          // is deliberately never rendered.
+          $("uid").textContent = auth.user.uid;
+          $("uidcard").style.display = "block";
+
+          const granted = auth.user?.credentials?.scopes ?? auth.scopes ?? [];
+          log(`authenticated — scopes granted: ${granted.join(", ") || "(none reported)"}`, "good");
+
+          if (granted.length && !granted.includes("payments")) {
+            log("the payments scope was not granted — createPayment will fail", "bad");
+          }
+          $("pay").disabled = false;
+        } catch (e) {
+          log(`authentication failed: ${e?.message ?? e}`, "bad");
+          $("auth").disabled = false;
+        }
+      });
+
+      $("pay").addEventListener("click", () => {
+        $("pay").disabled = true;
+        $("verdict").style.display = "none";
+        log(`createPayment — ${AMOUNT} Test-Pi, memo "${MEMO}"`);
+        try {
+          Pi.createPayment(
+            { amount: AMOUNT, memo: MEMO, metadata: { kind: "pion-u2a-setup-test" } },
+            {
+              onReadyForServerApproval,
+              onReadyForServerCompletion,
+              onCancel,
+              onError,
+            },
+          );
+        } catch (e) {
+          onError(e);
+        }
+      });
+    </script>
+  </body>
+</html>
