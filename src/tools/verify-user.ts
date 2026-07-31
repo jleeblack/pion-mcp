@@ -4,9 +4,15 @@ import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { PlatformAuthError, PLATFORM_URL, platformGet } from "../platform.js";
 import { fail, ok } from "./common.js";
 
-/** Shape of `GET /v2/me`. Only `uid` is guaranteed; scopes govern the rest. */
+/**
+ * Shape of `GET /v2/me`, confirmed against a live token:
+ *   { app_id, uid, credentials: { scopes[], valid_until: { timestamp, iso8601 } },
+ *     receiving_email, username }
+ * Everything but `uid` stays optional — the rest depends on granted scopes.
+ */
 interface PlatformMe {
   uid: string;
+  app_id?: string;
   username?: string;
   credentials?: {
     scopes?: string[];
@@ -18,6 +24,7 @@ const outputSchema = {
   valid: z.boolean(),
   uid: z.string().optional(),
   username: z.string().optional(),
+  app_id: z.string().optional(),
   scopes: z.array(z.string()).optional(),
   valid_until: z.string().optional(),
   reason: z.string().optional(),
@@ -55,6 +62,9 @@ export function registerVerifyUser(server: McpServer): void {
           valid: true,
           uid: me.uid,
           ...(me.username !== undefined ? { username: me.username } : {}),
+          // Which app the token was issued for. Worth surfacing: a token from
+          // a different app is a valid token that still must not be trusted.
+          ...(me.app_id !== undefined ? { app_id: me.app_id } : {}),
           ...(me.credentials?.scopes !== undefined ? { scopes: me.credentials.scopes } : {}),
           ...(me.credentials?.valid_until?.iso8601 !== undefined
             ? { valid_until: me.credentials.valid_until.iso8601 }

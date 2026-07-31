@@ -87,17 +87,25 @@ and wallet secret genuinely are server-owned.
    - Mainnet Horizon URL + network passphrase
    - Whether GET /payments requires the payment to belong to our app (Tier C)
    - A2U end-to-end latency and failure modes (incomplete payment recovery) (Tier C)
-   - `GET /v2/me` success-response shape. The implementation follows the platform
-     docs, not observed traffic: `uid` is treated as guaranteed, `username` and
-     `credentials.scopes` as scope-dependent and optional. Needs a real user
-     token to confirm.
    - **Length of a Pi payment identifier.** A2U requires it as the Stellar text
-     memo, which is capped at 28 bytes. If Pi issues anything longer (a UUID is
-     36 characters), the documented memo approach cannot work as written.
-     `send_payment` checks this after create and before signing, so it fails
-     safely — but the answer decides whether the design holds.
+     memo, which is capped at 28 bytes. Now looks likely to be a real problem:
+     Pi uses 36-character UUIDs for uids in the same API, and 36 > 28. If
+     payment ids follow the same convention the memo approach cannot work as
+     written. `send_payment` checks after create and before signing, so it
+     fails safely — but the answer decides whether the design holds.
    - Whether `POST /v2/payments` returns the recipient wallet address on the
      create response, as assumed, or requires a separate lookup.
+
+## Resolved
+
+- **`GET /v2/me` response shape** — confirmed against a live token:
+  `{ app_id, uid, credentials: { scopes[], valid_until: { timestamp, iso8601 } },
+  receiving_email, username }`. The nesting `verify_user` assumed was correct;
+  it now also surfaces `app_id`, which matters because a token issued for a
+  *different* app is still a valid token and must not be trusted.
+- **Pi Sign-in works outside the Pi Browser** via implicit flow, but consent
+  still happens in the Pi Browser: the desktop page shows a QR code, which the
+  phone app picks up. Granted scopes came back as `platform` and `username`.
 
 ## Observed during the build (not in the source docs)
 
@@ -111,3 +119,7 @@ and wallet secret genuinely are server-owned.
   failure case.
 - Accounts hold `liquidity_pool_shares` balances keyed by `liquidity_pool_id`
   rather than a code/issuer pair.
+- Pi uids are 36-character UUIDs, not opaque short ids. Relevant because the
+  A2U memo budget is 28 bytes.
+- `/v2/me` returns an `app_id` and a `receiving_email` flag that the platform
+  docs do not mention.

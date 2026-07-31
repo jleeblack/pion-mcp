@@ -126,9 +126,12 @@ server.listen(PORT, () => {
   console.log("Opening your browser. If it does not open, visit:\n");
   console.log(`  ${authUrl}\n`);
 
+  // cmd.exe treats & as a command separator, so an un-escaped OAuth URL is
+  // silently truncated at the first query parameter and the browser lands on
+  // an error page. ^ is cmd's escape character.
   const cmd =
     process.platform === "win32"
-      ? ["cmd", ["/c", "start", "", authUrl]]
+      ? ["cmd", ["/c", "start", "", authUrl.replace(/&/g, "^&")]]
       : process.platform === "darwin"
         ? ["open", [authUrl]]
         : ["xdg-open", [authUrl]];

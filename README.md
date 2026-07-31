@@ -154,23 +154,23 @@ first failure stage end to end.
 
 ## Known gaps
 
-Two paths are implemented from the Pi platform docs but have never been run
-against real credentials. Both are worth confirming before depending on them.
-
-- **`verify_user` success path.** `uid` is reliable; `username` and
-  `credentials` depend on granted scopes and are treated as optional, so they
-  come back absent rather than throwing if the payload nests differently.
+- **`verify_user` success path — confirmed** against a live token. Returns
+  `uid`, `username`, `app_id`, `scopes`, and `valid_until`. Everything but
+  `uid` stays optional, since the rest depends on granted scopes.
 - **`send_payment` success path — untested end to end.** No A2U payment has
   ever been sent with this code: that needs a real server API key and a funded
   testnet wallet. What *is* verified is every guard, the cap boundary, and the
   create-step failure. The sign, submit, and complete steps are unproven. Send
   a minimum-amount payment with a low cap as your first real run.
 
-One known unknown inside that: Pi matches the on-chain transaction by putting
-the payment identifier in a Stellar text memo, which is capped at 28 bytes. The
-real length of a Pi payment id is not documented. If it overflows, `send_payment`
-stops *before* signing and says so rather than failing mid-flow — but a longer
-id would mean the memo approach needs rethinking.
+One known unknown inside that, and it may be fatal to the current design: Pi
+matches the on-chain transaction by putting the payment identifier in a Stellar
+text memo, capped at **28 bytes**. Pi issues UUIDs elsewhere in the same API —
+a user uid is a 36-character UUID — and 36 does not fit in 28. If payment
+identifiers follow suit, the documented memo approach cannot work as written.
+`send_payment` detects this after create and refuses *before* signing, so it
+fails safely, but the design would need revisiting. `npm run probe:a2u`
+answers this without moving funds.
 
 ## Roadmap
 
