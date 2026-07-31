@@ -42,17 +42,34 @@ export class PlatformAuthError extends Error {
   }
 }
 
-export async function platformGet<T>(path: string, accessToken: string): Promise<T> {
+/**
+ * `Bearer` carries a user access token; `Key` carries the server API key.
+ * The credential is only ever used to build the Authorization header.
+ */
+interface Auth {
+  scheme: "Bearer" | "Key";
+  credential: string;
+}
+
+async function platformRequest<T>(
+  method: "GET" | "POST",
+  path: string,
+  auth: Auth,
+  body?: unknown,
+): Promise<T> {
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
 
   let response: Response;
   try {
     response = await fetch(`${PLATFORM_URL}${path}`, {
+      method,
       headers: {
-        authorization: `Bearer ${accessToken}`,
+        authorization: `${auth.scheme} ${auth.credential}`,
         accept: "application/json",
+        ...(body !== undefined ? { "content-type": "application/json" } : {}),
       },
+      ...(body !== undefined ? { body: JSON.stringify(body) } : {}),
       signal: controller.signal,
     });
   } catch (err) {
@@ -68,10 +85,11 @@ export async function platformGet<T>(path: string, accessToken: string): Promise
   }
 
   if (response.status === 401 || response.status === 403) {
+    const subject = auth.scheme === "Bearer" ? "access token" : "server API key";
     throw new PlatformAuthError(
       response.status === 401
-        ? "The Pi Platform API rejected this access token. It is invalid, expired, or was issued for a different app."
-        : "This access token is valid but lacks the scope required for this call.",
+        ? `The Pi Platform API rejected this ${subject}. It is invalid, expired, or was issued for a different app.`
+        : `This ${subject} is valid but lacks the permission required for this call.`,
       response.status,
     );
   }
@@ -89,4 +107,18 @@ export async function platformGet<T>(path: string, accessToken: string): Promise
   }
 
   return (await response.json()) as T;
+}
+
+/** Authenticated as a user, via their access token. */
+export function platformGet<T>(path: string, accessToken: string): Promise<T> {
+  return platformRequest<T>("GET", path, { scheme: "Bearer", credential: accessToken });
+}
+
+/** Authenticated as the app, via the server API key. Server-side only. */
+export function platformPostAsApp<T>(
+  path: string,
+  serverApiKey: string,
+  body?: unknown,
+): Promise<T> {
+  return platformRequest<T>("POST", path, { scheme: "Key", credential: serverApiKey }, body);
 }

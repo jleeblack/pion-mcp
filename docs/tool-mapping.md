@@ -22,14 +22,14 @@ No API key, no user consent needed. Safest possible starting tools.
 | `verify_user` | `GET /v2/me` (Bearer token) | ✅ shipped v0.2.0 | validates a token, returns uid/username |
 
 ### Tier C — Platform API with Server API Key
-| Tool | Backing call | Notes |
-|---|---|---|
-| `send_payment` (A2U) | `POST /payments` + Stellar tx + `/complete` | **testnet only currently** |
-| `get_payment_status` | `GET /payments/{id}` | |
-| `list_incomplete_payments` | `GET /payments/incomplete_server_payments` | recovery/hygiene tool |
-| `approve_payment` | `POST /payments/{id}/approve` | backend half of U2A |
-| `complete_payment` | `POST /payments/{id}/complete` | backend half of U2A |
-| `cancel_payment` | `POST /payments/{id}/cancel` | |
+| Tool | Backing call | Status | Notes |
+|---|---|---|---|
+| `send_payment` (A2U) | `POST /payments` + Stellar tx + `/complete` | ⚠️ on main, unreleased; success path untested | **testnet only**; off unless armed |
+| `get_payment_status` | `GET /payments/{id}` | planned | |
+| `list_incomplete_payments` | `GET /payments/incomplete_server_payments` | planned | recovery/hygiene tool |
+| `approve_payment` | `POST /payments/{id}/approve` | planned | backend half of U2A |
+| `complete_payment` | `POST /payments/{id}/complete` | planned | backend half of U2A |
+| `cancel_payment` | `POST /payments/{id}/cancel` | planned | |
 
 ## Testnet only (platform restriction, not ours)
 - All A2U payments (`send_payment`) — per payments_advanced.md
@@ -56,9 +56,18 @@ verified end-to-end against live testnet Horizon. The full MCP loop
 against the live Platform API; the success path still needs a real user token
 (see open questions below).
 
-**Next — Tier C.** A2U payments behind env-config (`PI_SERVER_API_KEY`,
-`PI_WALLET_SECRET`), testnet-default with explicit opt-in for anything that
-moves value.
+**Unreleased — Tier C begins.** `send_payment` (A2U). Off unless armed by four
+separate conditions: `PION_ENABLE_PAYMENTS=1`, a mandatory `PION_MAX_PAYMENT_PI`
+ceiling, both credentials, and a testnet Horizon URL. Credentials alone do not
+arm it. Not registered at all when disarmed, so a default server does not
+advertise a spend tool.
+
+Guards, the cap boundary, and the create-step failure are verified
+(`npm run arming`). **The success path has never run** — it needs a real server
+API key and a funded testnet wallet. Sign, submit, and complete are unproven.
+
+**Next.** The rest of Tier C: payment status, incomplete-payment recovery, and
+the U2A backend half.
 
 ### Correction to the original plan
 
@@ -74,7 +83,7 @@ and wallet secret genuinely are server-owned.
    (a) read layer, (b) A2U sender, (c) U2A *backend* companion to a Pi-Browser frontend.
 2. A2U = the "agent pays human" primitive; combined with the allowance-delegation
    concept, the app wallet becomes the agent's leashed spending account.
-3. Open questions — still unanswered after the Tier A/B build:
+3. Open questions — still unanswered after the Tier A/B/C build:
    - Mainnet Horizon URL + network passphrase
    - Whether GET /payments requires the payment to belong to our app (Tier C)
    - A2U end-to-end latency and failure modes (incomplete payment recovery) (Tier C)
@@ -82,6 +91,13 @@ and wallet secret genuinely are server-owned.
      docs, not observed traffic: `uid` is treated as guaranteed, `username` and
      `credentials.scopes` as scope-dependent and optional. Needs a real user
      token to confirm.
+   - **Length of a Pi payment identifier.** A2U requires it as the Stellar text
+     memo, which is capped at 28 bytes. If Pi issues anything longer (a UUID is
+     36 characters), the documented memo approach cannot work as written.
+     `send_payment` checks this after create and before signing, so it fails
+     safely — but the answer decides whether the design holds.
+   - Whether `POST /v2/payments` returns the recipient wallet address on the
+     create response, as assumed, or requires a separate lookup.
 
 ## Observed during the build (not in the source docs)
 

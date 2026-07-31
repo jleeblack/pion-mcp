@@ -1,7 +1,7 @@
 {
   "name": "pion-mcp",
   "version": "0.2.0",
-  "description": "Pion — Model Context Protocol (MCP) server for Pi Network. Read-only chain queries against Pi testnet Horizon.",
+  "description": "Pion \u2014 Model Context Protocol (MCP) server for Pi Network. Read-only chain queries against Pi testnet Horizon.",
   "keywords": [
     "mcp",
     "model-context-protocol",
@@ -34,10 +34,12 @@
     "typecheck": "tsc --noEmit",
     "start": "node dist/index.js",
     "smoke": "node scripts/smoke.mjs",
+    "arming": "node scripts/arming-test.mjs",
     "prepack": "npm run clean && npm run build"
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.30.0",
+    "@stellar/stellar-sdk": "^16.2.0",
     "zod": "^4.4.3"
   },
   "devDependencies": {
