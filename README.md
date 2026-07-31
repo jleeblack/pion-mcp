@@ -3,7 +3,7 @@
 **Model Context Protocol server for Pi Network** — connect AI agents
 (Claude, Cursor, and any MCP-compatible client) to Pi Network chain data.
 
-> ⚠️ v0.1 — testnet, read-only. Not yet published to npm.
+> ⚠️ v0.1 — testnet, read-only.
 
 ## Why "Pion"?
 The pion is the π meson — the particle physicists named after pi.
@@ -27,7 +27,7 @@ Amounts are decimal strings. Pi is reported as the asset `PI`, custom tokens as
 
 ## Usage
 
-Once published, MCP clients can run it straight from npm — no install step:
+MCP clients can run it straight from npm — no install step:
 
 ```jsonc
 // Claude Desktop: claude_desktop_config.json
@@ -46,7 +46,7 @@ Once published, MCP clients can run it straight from npm — no install step:
 claude mcp add pion -- npx -y pion-mcp
 ```
 
-Until then, run it from a clone:
+Or run it from a clone:
 
 ```sh
 npm install
