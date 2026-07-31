@@ -25,10 +25,10 @@ No API key, no user consent needed. Safest possible starting tools.
 | Tool | Backing call | Status | Notes |
 |---|---|---|---|
 | `send_payment` (A2U) | `POST /payments` + Stellar tx + `/complete` | ⚠️ on main, unreleased; success path untested | **testnet only**; off unless armed |
-| `get_payment_status` | `GET /payments/{id}` | planned | |
+| `get_payment_status` | `GET /payments/{id}` | planned as a tool; endpoint ✅ live-verified 2026-07-31 | exercised by the approve function's pre-approval read |
 | `list_incomplete_payments` | `GET /payments/incomplete_server_payments` | planned | recovery/hygiene tool |
-| `approve_payment` | `POST /payments/{id}/approve` | planned | backend half of U2A |
-| `complete_payment` | `POST /payments/{id}/complete` | planned | backend half of U2A |
+| `approve_payment` | `POST /payments/{id}/approve` | planned as a tool; endpoint ✅ live-verified 2026-07-31 | backend half of U2A; shipped as a Netlify function, not yet an MCP tool |
+| `complete_payment` | `POST /payments/{id}/complete` | planned as a tool; endpoint ✅ live-verified 2026-07-31 | backend half of U2A; shipped as a Netlify function, not yet an MCP tool |
 | `cancel_payment` | `POST /payments/{id}/cancel` | planned | |
 
 ## Testnet only (platform restriction, not ours)
@@ -66,8 +66,26 @@ Guards, the cap boundary, and the create-step failure are verified
 (`npm run arming`). **The success path has never run** — it needs a real server
 API key and a funded testnet wallet. Sign, submit, and complete are unproven.
 
+**U2A backend — live-verified 2026-07-31.** A real 0.314 Test-Pi payment ran end
+to end through `site/pay.html` and the two Netlify functions in `netlify/`:
+Pi Browser initiation → `GET /v2/payments/{id}` → `POST /approve` →
+`POST /complete`, all against the production Platform API with a server API key.
+This closed the final Developer Portal checklist item.
+
+What that does and does not establish: the three Platform API calls behind
+`get_payment_status`, `approve_payment`, and `complete_payment` are now proven
+against live infrastructure, including the server-key auth path. **None of them
+is an MCP tool yet** — the working implementation is a pair of Netlify functions
+serving a browser, so exposing them through Pion is still a port, not a wrap.
+It also says nothing about A2U, which is a different endpoint (`POST /payments`)
+and a different failure surface.
+
+Operational detail — what to capture on failure, how to read a 409/502/404, and
+the stuck-payment recovery path — is in `runbook.md`. `npm run u2a` covers the
+functions against a local stub.
+
 **Next.** The rest of Tier C: payment status, incomplete-payment recovery, and
-the U2A backend half.
+porting the U2A backend half from Netlify functions into MCP tools.
 
 ### Correction to the original plan
 
@@ -81,11 +99,16 @@ and wallet secret genuinely are server-owned.
 ## Design implications recorded
 1. U2A initiation is architecturally impossible from MCP — Pion positions as
    (a) read layer, (b) A2U sender, (c) U2A *backend* companion to a Pi-Browser frontend.
+   Position (c) is no longer theoretical: a Pi-Browser frontend handed our server a
+   paymentId and the server carried the approve/complete halves (2026-07-31).
 2. A2U = the "agent pays human" primitive; combined with the allowance-delegation
    concept, the app wallet becomes the agent's leashed spending account.
 3. Open questions — still unanswered after the Tier A/B/C build:
    - Mainnet Horizon URL + network passphrase
-   - Whether GET /payments requires the payment to belong to our app (Tier C)
+   - Whether GET /payments requires the payment to belong to our app (Tier C).
+     Half-answered 2026-07-31: it definitely *works* for a payment that does
+     belong to us. Whether a foreign payment id is refused is still untested,
+     and that is the half that matters for security.
    - A2U end-to-end latency and failure modes (incomplete payment recovery) (Tier C)
    - **Length of a Pi payment identifier.** A2U requires it as the Stellar text
      memo, which is capped at 28 bytes. Now looks likely to be a real problem:
@@ -142,3 +165,12 @@ and wallet secret genuinely are server-owned.
   a uid alone is not sufficient.
 - `/v2/me` returns an `app_id` and a `receiving_email` flag that the platform
   docs do not mention.
+- **A U2A payment identifier fits `[A-Za-z0-9_-]` and is at most 64 characters**
+  — the approve function validates against that charset before interpolating the
+  id into a request path, and a real payment passed through it (2026-07-31).
+  That bounds the format but does not pin the length, so it does not settle the
+  28-byte memo question on its own. Note that a U2A id is a free data point on
+  that question: both directions are records in the same `/v2/payments`
+  collection and are very likely to share a format, so the id logged by a U2A
+  run is worth measuring as a cross-check against the A2U probe. Likely, not
+  proven — `probe-a2u.mjs` remains the authoritative answer for A2U.
