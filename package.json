@@ -35,6 +35,7 @@
     "start": "node dist/index.js",
     "smoke": "node scripts/smoke.mjs",
     "arming": "node scripts/arming-test.mjs",
+    "probe:a2u": "node scripts/probe-a2u.mjs",
     "prepack": "npm run clean && npm run build"
   },
   "dependencies": {
