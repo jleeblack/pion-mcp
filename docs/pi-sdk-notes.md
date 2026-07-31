@@ -21,6 +21,20 @@ Understanding which layer an operation lives in determines whether Pion can expo
 - **Consequence for Pion: none of this is directly callable from an MCP server.**
   U2A payment *initiation* requires the user to be inside the Pi Browser.
 
+**`sandbox` — where the page runs, not which chain it touches.**
+`Pi.init({ version: "2.0", sandbox: true })` points the app at the sandbox
+environment at `sandbox.minepi.com`, reached through a development URL configured
+in the Developer Portal (Client SDK reference, Initialization). It is orthogonal
+to Mainnet/Testnet, which is fixed at app registration — a testnet-registered app
+moves Test-Pi with the flag either way. In the real Pi Browser, sandbox must be
+off; `sandbox: false` does **not** mean real Pi.
+
+Because the two are easy to confuse, our pages default the flag to their own
+primary use rather than sharing one default: `site/pay.html` defaults it **off**
+(its purpose is the on-phone Pi Browser test, `?sandbox=1` to opt in), and
+`scripts/browser-auth/index.html` defaults it **on** (a desktop dev tool,
+`?sandbox=0` to opt out).
+
 ### Layer 2 — Platform API (`api.minepi.com/v2`) — server-side
 Two auth mechanisms:
 1. **Bearer access token** (a user's token) — e.g. `GET /v2/me` to verify identity.
