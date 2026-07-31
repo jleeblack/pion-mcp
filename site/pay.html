@@ -81,6 +81,11 @@
       <code>Pion setup test</code>, exercising the full U2A round trip:
       Pi Browser initiates, our Netlify functions approve and complete.
     </p>
+    <p class="muted">
+      Authenticating also grants <code>wallet_address</code>, which is what lets
+      this uid <em>receive</em> A2U payments later. Re-authenticate here if you
+      granted only <code>payments</code> on an earlier visit.
+    </p>
 
     <p id="mode" class="muted"></p>
     <p id="env" class="bad"></p>
@@ -105,7 +110,12 @@
     <script>
       const AMOUNT = 0.314;
       const MEMO = "Pion setup test";
-      const SCOPES = ["payments"];
+      // wallet_address is not needed for the payment below — it is needed so
+      // this same uid can *receive* A2U payments later. A2U creation is hard-
+      // gated on the recipient's wallet_address consent, and the grant that
+      // counts is the one recorded by this SDK, not by Pi Sign-in. Asking for
+      // it here means one authentication serves both directions.
+      const SCOPES = ["payments", "wallet_address"];
 
       const $ = (id) => document.getElementById(id);
       const logEl = $("log");
@@ -255,7 +265,7 @@
 
       $("auth").addEventListener("click", async () => {
         $("auth").disabled = true;
-        log("authenticating with scope: payments");
+        log(`authenticating with scopes: ${SCOPES.join(", ")}`);
         try {
           const auth = await Pi.authenticate(SCOPES, onIncompletePaymentFound);
           // uid and granted scopes only — the access token is a credential and
@@ -266,8 +276,15 @@
           const granted = auth.user?.credentials?.scopes ?? auth.scopes ?? [];
           log(`authenticated — scopes granted: ${granted.join(", ") || "(none reported)"}`, "good");
 
+          // Pi returns an undocumented `platform` scope on every grant, so the
+          // granted set is checked for what we need rather than compared for
+          // equality with what we asked.
           if (granted.length && !granted.includes("payments")) {
             log("the payments scope was not granted — createPayment will fail", "bad");
+          }
+          if (granted.length && !granted.includes("wallet_address")) {
+            // Does not block the payment below; only A2U in the other direction.
+            log("wallet_address was not granted — A2U to this uid stays blocked", "bad");
           }
           $("pay").disabled = false;
         } catch (e) {

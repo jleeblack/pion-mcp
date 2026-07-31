@@ -24,7 +24,7 @@ No API key, no user consent needed. Safest possible starting tools.
 ### Tier C — Platform API with Server API Key
 | Tool | Backing call | Status | Notes |
 |---|---|---|---|
-| `send_payment` (A2U) | `POST /payments` + Stellar tx + `/complete` | ⚠️ on main, unreleased; success path untested | **testnet only**; off unless armed |
+| `send_payment` (A2U) | `POST /payments` + Stellar tx + `/complete` | ⚠️ on main, unreleased; success path untested | **testnet only**; off unless armed; **recipient must have granted `wallet_address`** — see constraint below |
 | `get_payment_status` | `GET /payments/{id}` | planned as a tool; endpoint ✅ live-verified 2026-07-31 | exercised by the approve function's pre-approval read |
 | `list_incomplete_payments` | `GET /payments/incomplete_server_payments` | planned | recovery/hygiene tool |
 | `approve_payment` | `POST /payments/{id}/approve` | planned as a tool; endpoint ✅ live-verified 2026-07-31 | backend half of U2A; shipped as a Netlify function, not yet an MCP tool |
@@ -86,6 +86,37 @@ functions against a local stub.
 
 **Next.** The rest of Tier C: payment status, incomplete-payment recovery, and
 porting the U2A backend half from Netlify functions into MCP tools.
+
+### Constraint on `send_payment`: recipient consent (confirmed 2026-07-31)
+
+A2U payment creation is **hard-gated on the recipient's `wallet_address`
+consent**, enforced by Pi at `POST /v2/payments` and refused before anything is
+created. Full error shape in `pi-sdk-notes.md`. Reconfirmed against a uid that
+had authenticated through the Browser SDK requesting `payments` only — so the
+gate is about *which scopes were granted*, not about which surface granted them.
+
+This is a permanent property of the tool, not a bug to fix: `send_payment` can
+never pay an arbitrary uid. It can only pay users who have already consented to
+receive from this app. Worth stating plainly in the tool description, because
+"agent pays human" implies a reach the API does not provide.
+
+**Requirement.** The tool must catch this specific 401 and surface *"the
+recipient hasn't consented to receive payments from this app"* rather than a raw
+scope error — a caller seeing `missing_scope` on a 401 will reasonably conclude
+the API key is bad and go debug the wrong thing.
+
+**Status: substantially implemented, one line wrong.** `platform.ts` already
+branches on `missing_scope` before blaming the credential, and explains that it
+is a consent problem; `send_payment` routes it through `strandedReport("create")`,
+which correctly reports that no payment was created and nothing needs cleanup.
+The remaining gap is the remediation advice, which tells the caller to *"Re-run
+Pi Sign-in requesting it"* — the one route we have observed does **not** satisfy
+A2U. It should point at a Pi Browser SDK grant instead. The same stale advice
+appears in `scripts/probe-a2u.mjs`'s error handler.
+
+**Still open pending a successful create:** payment identifier length (expected
+fit) and whether the create response carries the recipient wallet address. The
+probe failed before an identifier existed, so it answered neither.
 
 ### Correction to the original plan
 
@@ -177,7 +208,9 @@ and wallet secret genuinely are server-owned.
   a status that otherwise means "bad API key", so the body must be read to
   tell a consent problem from a credential problem. Sending Pi to a user
   therefore requires them to have signed in and approved wallet_address first;
-  a uid alone is not sufficient.
+  a uid alone is not sufficient. **Reconfirmed 2026-07-31** against a
+  Browser-SDK-authenticated uid — see the `send_payment` constraint section
+  above for the tool-level requirement this creates.
 - `/v2/me` returns an `app_id` and a `receiving_email` flag that the platform
   docs do not mention.
 - **A U2A payment identifier is 28 characters of base62-style ASCII** — e.g.

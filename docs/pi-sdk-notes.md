@@ -61,6 +61,30 @@ Two auth mechanisms:
 
 **A2U constraint (from payments_advanced.md): "currently available only on the Testnet."**
 
+**A2U constraint (observed, undocumented): the recipient must have granted
+`wallet_address`.** `POST /v2/payments` is hard-gated on the *recipient's*
+consent and refuses at creation — nothing is created, so there is nothing to
+clean up. Verified 2026-07-31 against a uid that had authenticated through the
+Browser SDK with `payments` only:
+
+```
+HTTP 401
+{"error":"missing_scope",
+ "error_message":"User hasn't authorized \"wallet_address\" scope for you to
+                  access the public key."}
+```
+
+Two things make this easy to misdiagnose. It arrives as **401**, which
+otherwise means "bad API key" — so the body must be read to tell a consent
+problem from a credential problem. And the missing consent is the *recipient's*,
+not the app's: the key is fine, the caller is fine, and a valid uid is not
+sufficient. Sending Pi to a user requires them to have approved `wallet_address`
+for your app first.
+
+A 401 `missing_scope` also implies Pi resolved the uid *within the calling app*
+— an unknown uid fails differently — so this error doubles as weak confirmation
+that the uid and the server API key belong to the same app.
+
 U2A note: initiation is Browser-locked (Layer 1), but the approve/complete halves are
 plain server-side API calls — Pion can act as the *backend* of a U2A flow if a
 Pi-Browser frontend hands it the paymentId.
