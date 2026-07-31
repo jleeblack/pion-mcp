@@ -1,0 +1,113 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Pion — Pi Browser authorization</title>
+    <script src="https://sdk.minepi.com/pi-sdk.js"></script>
+    <style>
+      body {
+        font: 16px/1.5 system-ui, sans-serif;
+        margin: 0 auto;
+        padding: 2rem 1.25rem;
+        max-width: 32rem;
+      }
+      h1 { font-size: 1.25rem; }
+      button {
+        font: inherit;
+        padding: 0.75rem 1.25rem;
+        width: 100%;
+        border: 0;
+        border-radius: 8px;
+        background: #6b3fa0;
+        color: #fff;
+      }
+      button[disabled] { opacity: 0.5; }
+      pre {
+        background: #f4f4f6;
+        padding: 0.75rem;
+        border-radius: 8px;
+        overflow-x: auto;
+        font-size: 13px;
+      }
+      .bad { color: #b00020; }
+      .good { color: #067647; }
+      @media (prefers-color-scheme: dark) {
+        body { background: #16161a; color: #eee; }
+        pre { background: #24242b; }
+      }
+    </style>
+  </head>
+  <body>
+    <h1>Authorize this app in the Pi Browser</h1>
+    <p>
+      A2U payments read the grant recorded by the Pi Browser SDK. A Pi Sign-in
+      grant is not the same record — this page creates the one that counts.
+    </p>
+
+    <p id="env" class="bad"></p>
+    <button id="go" disabled>Authenticate</button>
+    <div id="out"></div>
+
+    <script>
+      const SCOPES = ["username", "wallet_address"];
+      const out = document.getElementById("out");
+      const btn = document.getElementById("go");
+      const env = document.getElementById("env");
+
+      const show = (html) => (out.innerHTML = html);
+      const esc = (s) =>
+        String(s).replace(/[&<>]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;" })[c]);
+
+      // Pi.authenticate requires this callback; an unfinished U2A payment
+      // would otherwise block authentication silently.
+      function onIncompletePaymentFound(payment) {
+        show(
+          `<p class="bad">An incomplete payment is blocking authentication:</p>
+           <pre>${esc(JSON.stringify(payment, null, 2))}</pre>`,
+        );
+      }
+
+      if (typeof window.Pi === "undefined") {
+        env.textContent =
+          "The Pi SDK did not load. This page must be opened inside the Pi Browser, " +
+          "at a URL registered for your app in the Developer Portal.";
+      } else {
+        try {
+          Pi.init({ version: "2.0" });
+          env.textContent = "";
+          btn.disabled = false;
+        } catch (e) {
+          env.textContent = "Pi.init failed: " + e.message;
+        }
+      }
+
+      btn.addEventListener("click", async () => {
+        btn.disabled = true;
+        show("<p>Waiting for approval…</p>");
+        try {
+          const auth = await Pi.authenticate(SCOPES, onIncompletePaymentFound);
+          const granted = auth.user?.credentials?.scopes ?? auth.scopes ?? [];
+          const missing = SCOPES.filter((s) => !granted.includes(s));
+
+          // Deliberately renders uid and scopes only. The access token is a
+          // credential and is not displayed.
+          show(
+            `<p class="good"><strong>Authorized.</strong></p>
+             <p>uid<br><code>${esc(auth.user.uid)}</code></p>
+             <p>username: ${esc(auth.user.username ?? "(not granted)")}</p>
+             <p>scopes granted: ${esc(granted.join(", ") || "(none reported)")}</p>` +
+              (missing.length
+                ? `<p class="bad">Still missing: ${esc(missing.join(", "))}.
+                   A2U cannot work without wallet_address.</p>`
+                : `<p class="good">wallet_address granted. Back on your machine, run:</p>
+                   <pre>node scripts/probe-a2u.mjs ${esc(auth.user.uid)}</pre>`),
+          );
+        } catch (e) {
+          show(`<p class="bad">Authentication failed: ${esc(e?.message ?? e)}</p>`);
+          btn.disabled = false;
+        }
+      });
+    </script>
+  </body>
+</html>

@@ -37,6 +37,8 @@
     "arming": "node scripts/arming-test.mjs",
     "probe:a2u": "node scripts/probe-a2u.mjs",
     "diagnose:a2u": "node scripts/diagnose-a2u.mjs",
+    "identify:app": "node scripts/identify-app.mjs",
+    "browser-auth": "node scripts/browser-auth/serve.mjs",
     "wallet": "node scripts/app-wallet.mjs",
     "signin": "node scripts/pi-signin.mjs",
     "prepack": "npm run clean && npm run build"
