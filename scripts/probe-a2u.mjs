@@ -146,14 +146,19 @@ async function main() {
     );
   }
 
-  const recipient = payment.recipient;
+  // Answered 2026-07-31: the field is `to_address`. This probe originally read
+  // `recipient` — the same wrong guess send_payment made — and reported the
+  // address as absent when it was right there in the body above. Kept as a
+  // regression check on the field name rather than as an open question.
+  const recipient = payment.to_address;
   console.log(
-    `\n2. Recipient address on create response: ${recipient ?? "(absent)"}`,
+    `\n2. Recipient address on create response (to_address): ${recipient ?? "(absent)"}`,
   );
   console.log(
     typeof recipient === "string" && /^G[A-Z2-7]{55}$/.test(recipient)
-      ? "   ✓ Present and well-formed — send_payment's assumption holds."
-      : "   ✗ Missing or malformed — send_payment needs a separate lookup step.",
+      ? "   ✓ Present and well-formed — no separate lookup needed."
+      : "   ✗ Missing or malformed. Check the response body above for the real\n" +
+          "     field name before concluding a lookup is required.",
   );
 
   // Clean up. Leaving the record would show up as an incomplete payment.

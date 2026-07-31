@@ -85,6 +85,41 @@ A 401 `missing_scope` also implies Pi resolved the uid *within the calling app*
 — an unknown uid fails differently — so this error doubles as weak confirmation
 that the uid and the server API key belong to the same app.
 
+### `POST /v2/payments` response shape (observed 2026-07-31)
+
+From a live A2U create. Field names here are load-bearing and several are not
+in the docs:
+
+```jsonc
+{
+  "identifier": "tG76m134ce43WkPasVL8nCWLUomS", // 28 chars — fits memo_text exactly
+  "amount": 1e-7,                  // JSON number, and small values arrive in
+                                   // exponential notation — parse, don't string-match
+  "direction": "app_to_user",
+  "from_address": "G…",            // the app wallet
+  "to_address": "G…",              // the RECIPIENT wallet — not `recipient`
+  "user_uid": "…",
+  "memo": "…",
+  "network": "Pi Testnet",
+  "transaction": null,             // until the on-chain tx is submitted
+  "split_recipients": null,        // undocumented
+  "token_canonical": null,         // undocumented
+  "status": {
+    "developer_approved": true,    // A2U is auto-approved at create
+    "transaction_verified": false,
+    "developer_completed": false,
+    "cancelled": false,
+    "user_cancelled": false
+  }
+}
+```
+
+Two things worth carrying forward. The recipient address **is** on the create
+response, so A2U needs no separate wallet lookup — but it is `to_address`, and
+code that guessed `recipient` gets `undefined` rather than an error. And A2U
+comes back `developer_approved: true` already, confirming that `/approve` is a
+U2A-only step: the app approving its own outgoing payment would be redundant.
+
 U2A note: initiation is Browser-locked (Layer 1), but the approve/complete halves are
 plain server-side API calls — Pion can act as the *backend* of a U2A flow if a
 Pi-Browser frontend hands it the paymentId.

@@ -141,29 +141,6 @@ and wallet secret genuinely are server-owned.
      belong to us. Whether a foreign payment id is refused is still untested,
      and that is the half that matters for security.
    - A2U end-to-end latency and failure modes (incomplete payment recovery) (Tier C)
-   - **Length of a Pi payment identifier.** A2U requires it as the Stellar text
-     memo, capped at 28 bytes. **Expected fit, pending probe confirmation**
-     (revised 2026-07-31, was "likely too long").
-
-     Two live U2A payments returned ids of the form
-     `WmVLw2vEdNLe9GfbH8stVT0oW5YL` — 28 characters of base62-style ASCII, so
-     exactly 28 bytes, exactly the `memo_text` limit. Landing precisely on the
-     cap reads as deliberate: Pi appears to have sized payment ids to fit a
-     Stellar memo. The earlier worry — that ids would follow the 36-character
-     UUID convention Pi uses for uids — is contradicted by direct evidence.
-     A2U ids are expected to share the format, both being records in the same
-     `/v2/payments` collection. `probe-a2u.mjs` is still the confirmation for
-     A2U specifically; a deviation is now the surprise rather than the
-     expectation.
-
-     Consequence: the fit is exact, with **zero headroom**. `send_payment` adds
-     the bare identifier (`Memo.text(payment.identifier)`) and decorates it with
-     nothing, which is precisely what makes it work — any prefix or tag would
-     overflow. Its pre-signing guard is `> MAX_MEMO_BYTES`, not `>=`, so a
-     28-byte id passes; an off-by-one there would have rejected every payment.
-     Both details are load-bearing and should not be "tidied".
-   - Whether `POST /v2/payments` returns the recipient wallet address on the
-     create response, as assumed, or requires a separate lookup.
    - **Does a Pi Sign-in `wallet_address` consent satisfy A2U create?**
      **Untested in both directions** — we have never confirmed that it does, and
      we have never cleanly demonstrated that it does not. The one experiment
@@ -178,6 +155,44 @@ and wallet secret genuinely are server-owned.
      its own rather than inference from adjacent failures.
 
 ## Resolved
+
+- **Payment identifier length — 28 bytes, fits exactly** (confirmed 2026-07-31
+  by `npm run probe:a2u` against a live A2U create; `tG76m134ce43WkPasVL8nCWLUomS`).
+  Three samples across both directions — two U2A, one A2U — are all exactly 28
+  characters of base62-style ASCII, so the format is stable and shared. This
+  lands precisely on the Stellar `memo_text` cap, which reads as deliberate:
+  Pi appears to have sized payment ids to fit a memo. The earlier worry that ids
+  would follow the 36-character UUID convention Pi uses for uids was wrong.
+
+  The fit is exact, with **zero headroom**, which makes two details in
+  `send_payment` load-bearing rather than incidental: it writes the bare
+  identifier (`Memo.text(payment.identifier)`) and decorates it with nothing —
+  any prefix or tag would overflow — and its guard is `> MAX_MEMO_BYTES`, not
+  `>=`, so a 28-byte id passes. An off-by-one there would reject every payment.
+  Neither should be "tidied".
+
+- **The create response *does* carry the recipient wallet — as `to_address`,
+  not `recipient`** (2026-07-31). No separate lookup is needed, so the original
+  design assumption held; only the field name was wrong.
+
+  `probe-a2u.mjs` reported this as "✗ Missing or malformed — send_payment needs
+  a separate lookup step", which was wrong for the same reason the tool was: it
+  read `payment.recipient`, a field the API does not return. The live response
+  clearly carries `to_address`, plus `from_address` for the app wallet. **The
+  probe's own verdict on this question should not be trusted; read the response
+  body it prints above the verdict.**
+
+  This was a real bug in `send_payment`, not just in the probe: `PiPayment`
+  declared `recipient`, and the response is *cast* to that interface rather than
+  parsed, so the wrong name was `undefined` at runtime and invisible to
+  TypeScript. Every A2U payment would have failed while building the
+  transaction — safely, at the `submit` stage with no funds moved, but leaving a
+  stranded payment record every time. Fixed, with a pre-signing address check
+  alongside the memo check so a future rename fails cleanly instead of mid-build.
+
+  General lesson: casting an external response to an interface buys no
+  guarantees. Every field name in that interface is an untested assumption until
+  something reads it against real data.
 
 - **`GET /v2/me` response shape** — confirmed against a live token:
   `{ app_id, uid, credentials: { scopes[], valid_until: { timestamp, iso8601 } },

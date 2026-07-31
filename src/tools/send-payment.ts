@@ -13,11 +13,25 @@ const NETWORK_PASSPHRASE = "Pi Testnet";
 /** Stellar text memos are capped at 28 bytes. */
 const MAX_MEMO_BYTES = 28;
 
+/** Stellar public key: 56 chars, base32, leading G. */
+const STELLAR_ADDRESS = /^G[A-Z2-7]{55}$/;
+
 const TX_TIMEOUT_SECONDS = 180;
 
+/**
+ * Subset of Pi's create-payment response that we actually use.
+ *
+ * Field names verified against a live `POST /v2/payments` response
+ * (`npm run probe:a2u`, 2026-07-31). The recipient wallet is `to_address` — an
+ * earlier version of this interface called it `recipient`, which no version of
+ * the API ever returned. Nothing caught it, because the response is cast to
+ * this type rather than parsed: a wrong name here is `undefined` at runtime,
+ * not a type error.
+ */
 interface PiPayment {
   identifier: string;
-  recipient: string;
+  /** The recipient's Stellar address. Present on create — no lookup needed. */
+  to_address: string;
   amount: number;
 }
 
@@ -187,6 +201,19 @@ export function registerSendPayment(server: McpServer, config: PaymentsConfig): 
           );
         }
 
+        // Same reasoning for the destination. The response is cast, not parsed,
+        // so a missing or renamed field arrives as undefined and would blow up
+        // mid-build; checking here keeps the failure before anything is signed.
+        if (!STELLAR_ADDRESS.test(payment.to_address ?? "")) {
+          return strandedReport(
+            "submit",
+            `Pi's create response carried no usable recipient address ` +
+              `(to_address was ${JSON.stringify(payment.to_address)}), so the payment ` +
+              "cannot be built. Nothing was signed.",
+            { paymentId, amount, uid },
+          );
+        }
+
         // ---- Step 2: sign and submit on-chain. Irreversible. ----
         stage = "submit";
         const horizon = new Horizon.Server(HORIZON_URL);
@@ -199,7 +226,7 @@ export function registerSendPayment(server: McpServer, config: PaymentsConfig): 
         })
           .addOperation(
             Operation.payment({
-              destination: payment.recipient,
+              destination: payment.to_address,
               asset: Asset.native(),
               amount,
             }),
@@ -223,7 +250,7 @@ export function registerSendPayment(server: McpServer, config: PaymentsConfig): 
           payment_id: payment.identifier,
           txid,
           uid,
-          recipient: payment.recipient,
+          recipient: payment.to_address,
           amount,
           network: NETWORK_PASSPHRASE,
         });
