@@ -25,9 +25,18 @@ const HORIZON_URL = (process.env.PION_HORIZON_URL ?? "https://api.testnet.minepi
 
 const secret = process.env.PI_WALLET_SECRET;
 if (!secret) {
-  console.error("PI_WALLET_SECRET is not set in this shell.\n");
+  // Distinguish "never set" from "set but empty" — the second happens when a
+  // Read-Host prompt is submitted before the paste registers, and reporting
+  // it as unset sends you looking in the wrong place.
+  console.error(
+    secret === ""
+      ? "PI_WALLET_SECRET is set but empty — the prompt was submitted with nothing in it.\n"
+      : "PI_WALLET_SECRET is not set in this shell.\n",
+  );
   console.error("Set it without leaving the value in PowerShell history:");
   console.error('  $env:PI_WALLET_SECRET = Read-Host "Wallet secret"');
+  console.error("\nPaste at the prompt, then press Enter. Confirm with:");
+  console.error("  $env:PI_WALLET_SECRET.Length     # expect 56");
   process.exit(1);
 }
 
