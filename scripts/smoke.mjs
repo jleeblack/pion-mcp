@@ -33,10 +33,13 @@ function summarize(label, result) {
 const { address, hash } = await discoverFixtures();
 console.log(`Fixtures from ${HORIZON}:\n  address = ${address}\n  tx      = ${hash}`);
 
+// Defaults to the local build; pass a path to test an installed copy instead,
+// e.g. `node scripts/smoke.mjs ../somewhere/node_modules/pion-mcp/dist/index.js`
+const entry = process.argv[2] ?? "dist/index.js";
+console.log(`Server entry: ${entry}`);
+
 const client = new Client({ name: "pion-smoke", version: "0.1.0" });
-await client.connect(
-  new StdioClientTransport({ command: process.execPath, args: ["dist/index.js"] }),
-);
+await client.connect(new StdioClientTransport({ command: process.execPath, args: [entry] }));
 
 const { tools } = await client.listTools();
 console.log(`\nTools advertised: ${tools.map((t) => t.name).join(", ")}`);
