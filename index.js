@@ -1,1 +1,0 @@
-console.log("Pion — MCP server for Pi Network. Coming soon: github.com/YOURUSERNAME/pion-mcp");
