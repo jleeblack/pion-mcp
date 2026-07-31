@@ -1,0 +1,280 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Pion — Model Context Protocol server for Pi Network</title>
+<meta name="description" content="Pion lets AI agents — Claude, Cursor, and any MCP-compatible client — query the Pi Network blockchain: wallet balances, payment history, and transaction verification. Read-only, zero keys, testnet-first.">
+<meta property="og:title" content="Pion — Model Context Protocol server for Pi Network">
+<meta property="og:description" content="Connect AI agents to the Pi blockchain. Read-only tools, no API keys, testnet-first.">
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://pionmcp.com">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=STIX+Two+Text:ital,wght@0,400;0,600;0,700;1,400&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --paper:#FAFAF6;
+    --ink:#1B1B22;
+    --accent:#6B3FA0;   /* Pi violet */
+    --muted:#67676F;
+    --rule:#D8D6CC;
+    --code-bg:#F1EFE8;
+    --track:#B0762A;
+  }
+  *{margin:0;padding:0;box-sizing:border-box}
+  html{scroll-behavior:smooth}
+  body{
+    background:var(--paper);
+    color:var(--ink);
+    font-family:"STIX Two Text",Georgia,serif;
+    font-size:1.0625rem;
+    line-height:1.65;
+  }
+  .page{max-width:44rem;margin:0 auto;padding:3.5rem 1.5rem 5rem}
+
+  /* ---------- masthead ---------- */
+  .masthead{
+    font-family:"IBM Plex Mono",monospace;
+    font-size:.75rem;
+    letter-spacing:.04em;
+    color:var(--muted);
+    display:flex;justify-content:space-between;gap:1rem;flex-wrap:wrap;
+    border-bottom:1px solid var(--rule);
+    padding-bottom:.9rem;
+  }
+  .masthead a{color:var(--muted)}
+
+  /* ---------- title block ---------- */
+  .titleblock{text-align:center;margin:3.2rem 0 2.6rem}
+  h1{
+    font-size:clamp(2.6rem,7vw,3.4rem);
+    font-weight:700;
+    letter-spacing:-.01em;
+    line-height:1.1;
+  }
+  h1 .pi{color:var(--accent);font-style:italic}
+  .subtitle{font-size:1.2rem;margin-top:.7rem}
+  .authors{
+    font-family:"IBM Plex Mono",monospace;
+    font-size:.78rem;color:var(--muted);
+    margin-top:1.1rem;letter-spacing:.03em;
+  }
+
+  /* ---------- abstract ---------- */
+  .abstract{
+    border-top:1px solid var(--ink);
+    border-bottom:1px solid var(--ink);
+    padding:1.35rem 1.6rem;
+    margin:0 auto 3rem;
+  }
+  .abstract .label{
+    font-family:"IBM Plex Mono",monospace;
+    font-size:.72rem;letter-spacing:.18em;text-transform:uppercase;
+    color:var(--accent);
+    display:block;margin-bottom:.55rem;
+  }
+  .abstract p{font-size:1rem}
+
+  /* ---------- figure ---------- */
+  figure{margin:2.8rem 0 3rem;text-align:center}
+  .chamber{
+    width:100%;max-width:34rem;height:auto;
+    display:inline-block;
+  }
+  figcaption{
+    font-size:.86rem;color:var(--muted);
+    max-width:32rem;margin:.8rem auto 0;line-height:1.5;
+  }
+  figcaption b{color:var(--ink);font-weight:600}
+  @media (prefers-reduced-motion:no-preference){
+    .chamber path{
+      stroke-dasharray:900;stroke-dashoffset:900;
+      animation:trace 2.2s ease-out forwards;
+    }
+    .chamber path:nth-of-type(2){animation-delay:.25s}
+    .chamber path:nth-of-type(3){animation-delay:.5s}
+    .chamber path:nth-of-type(4){animation-delay:.7s}
+    @keyframes trace{to{stroke-dashoffset:0}}
+  }
+
+  /* ---------- sections ---------- */
+  section{margin:3rem 0}
+  h2{
+    font-size:1.28rem;font-weight:700;
+    margin-bottom:1rem;
+  }
+  h2 .no{color:var(--accent);margin-right:.55rem}
+  p + p{margin-top:.9rem}
+  a{color:var(--accent);text-decoration-thickness:1px;text-underline-offset:2.5px}
+  a:hover{text-decoration-thickness:2px}
+  a:focus-visible{outline:2px solid var(--accent);outline-offset:2px;border-radius:2px}
+
+  /* ---------- tool table ---------- */
+  table{
+    width:100%;border-collapse:collapse;
+    font-size:.95rem;margin-top:1.2rem;
+  }
+  th{
+    font-family:"IBM Plex Mono",monospace;
+    font-size:.72rem;letter-spacing:.12em;text-transform:uppercase;
+    color:var(--muted);font-weight:500;
+    text-align:left;padding:.5rem .6rem;
+    border-bottom:1px solid var(--ink);
+  }
+  td{padding:.65rem .6rem;border-bottom:1px solid var(--rule);vertical-align:top}
+  td code{white-space:nowrap}
+  code{
+    font-family:"IBM Plex Mono",monospace;
+    font-size:.86em;
+    background:var(--code-bg);
+    padding:.1em .35em;border-radius:3px;
+  }
+  pre{
+    background:var(--code-bg);
+    border:1px solid var(--rule);
+    border-radius:6px;
+    padding:1rem 1.15rem;
+    overflow-x:auto;
+    margin-top:1.1rem;
+    line-height:1.55;
+  }
+  pre code{background:none;padding:0;font-size:.84rem}
+  .comment{color:var(--muted)}
+
+  /* ---------- status list ---------- */
+  .roadmap{list-style:none;margin-top:1rem}
+  .roadmap li{
+    padding:.45rem 0 .45rem 1.7rem;position:relative;
+  }
+  .roadmap li::before{
+    font-family:"IBM Plex Mono",monospace;
+    position:absolute;left:0;top:.5rem;font-size:.8rem;
+  }
+  .roadmap .done::before{content:"✓";color:var(--accent)}
+  .roadmap .now::before{content:"→";color:var(--track)}
+  .roadmap .next::before{content:"·";color:var(--muted)}
+
+  /* ---------- references / footer ---------- */
+  .refs{
+    font-size:.92rem;
+    counter-reset:ref;
+  }
+  .refs li{
+    list-style:none;counter-increment:ref;
+    padding-left:2.1rem;position:relative;margin-top:.55rem;
+  }
+  .refs li::before{
+    content:"[" counter(ref) "]";
+    position:absolute;left:0;
+    font-family:"IBM Plex Mono",monospace;font-size:.8rem;color:var(--muted);
+  }
+  footer{
+    margin-top:4rem;padding-top:1.1rem;
+    border-top:1px solid var(--rule);
+    font-size:.84rem;color:var(--muted);
+    display:flex;justify-content:space-between;gap:1rem;flex-wrap:wrap;
+  }
+</style>
+</head>
+<body>
+<div class="page">
+
+  <div class="masthead">
+    <span>pion-mcp · v0.1 · Pi Testnet</span>
+    <span><a href="https://github.com/jleeblack/pion-mcp">github</a> · <a href="https://www.npmjs.com/package/pion-mcp">npm</a></span>
+  </div>
+
+  <div class="titleblock">
+    <h1>Pion<span class="pi">.</span></h1>
+    <p class="subtitle">A Model Context Protocol server for Pi Network</p>
+    <p class="authors">unofficial community project · not affiliated with Pi Network</p>
+  </div>
+
+  <div class="abstract">
+    <span class="label">Abstract</span>
+    <p>
+      Pion connects AI agents — Claude, Cursor, and any MCP-compatible client — to the
+      Pi Network blockchain. Version 0.1 exposes read-only tools for wallet balances,
+      payment history, and transaction verification against public testnet infrastructure:
+      no API keys, no wallet secrets, nothing that can move value. It is the first step
+      toward agents that can transact on Pi safely, with humans holding the leash.
+    </p>
+  </div>
+
+  <figure>
+    <svg class="chamber" viewBox="0 0 560 240" role="img" aria-label="Stylized bubble-chamber particle tracks curving from a collision point" xmlns="http://www.w3.org/2000/svg">
+      <circle cx="120" cy="120" r="3.5" fill="#1B1B22"/>
+      <path d="M120 120 C 210 60, 330 40, 545 28" fill="none" stroke="#6B3FA0" stroke-width="2"/>
+      <path d="M120 120 C 230 130, 340 118, 548 132" fill="none" stroke="#B0762A" stroke-width="2"/>
+      <path d="M120 120 C 200 185, 290 215, 420 222 C 470 224, 480 190, 445 180 C 415 172, 400 200, 430 212" fill="none" stroke="#67676F" stroke-width="1.6"/>
+      <path d="M120 120 C 165 95, 185 60, 190 22" fill="none" stroke="#9B9B93" stroke-width="1.3" stroke-dasharray="4 5"/>
+    </svg>
+    <figcaption>
+      <b>Fig. 1</b> — In particle physics, the pion is the π meson, and pion decays are
+      studied in searches for MCPs (millicharged particles). A π particle producing MCPs:
+      we found the name irresistible.
+    </figcaption>
+  </figure>
+
+  <section>
+    <h2><span class="no">1.</span>Tools</h2>
+    <p>
+      Every v0.1 tool is a read against Pi's public Horizon API. An agent can look,
+      verify, and reason about on-chain state — it cannot spend, sign, or hold anything.
+    </p>
+    <table>
+      <thead><tr><th>Tool</th><th>What the agent gets</th></tr></thead>
+      <tbody>
+        <tr><td><code>get_wallet_balance</code></td><td>Pi and token balances for any wallet address</td></tr>
+        <tr><td><code>get_account_payments</code></td><td>Payment history for an account</td></tr>
+        <tr><td><code>query_transaction</code></td><td>Details and verification of a specific transaction</td></tr>
+      </tbody>
+    </table>
+  </section>
+
+  <section>
+    <h2><span class="no">2.</span>Quickstart</h2>
+    <p>Add Pion to your MCP client's configuration — for Claude Desktop, that's <code>claude_desktop_config.json</code>:</p>
+<pre><code>{
+  "mcpServers": {
+    "pion": {
+      "command": "npx",
+      "args": ["-y", "pion-mcp"]
+    }
+  }
+}</code></pre>
+    <p>
+      Restart the client and ask your agent for a testnet wallet balance. No keys to
+      configure — v0.1 talks only to public endpoints.
+    </p>
+  </section>
+
+  <section>
+    <h2><span class="no">3.</span>Status</h2>
+    <ul class="roadmap">
+      <li class="done">Name, package, and domain claimed; SDK surface mapped</li>
+      <li class="now">v0.1 — read-only Horizon tools on Pi Testnet</li>
+      <li class="next">v0.2 — App-to-User payments (testnet), payment status and recovery tools</li>
+      <li class="next">Later — agent allowance delegation: humans authorize, agents spend within bounds</li>
+    </ul>
+  </section>
+
+  <section>
+    <h2><span class="no">4.</span>References</h2>
+    <ol class="refs">
+      <li><a href="https://github.com/jleeblack/pion-mcp">Pion source repository</a> — Apache-2.0, contributions welcome.</li>
+      <li><a href="https://www.npmjs.com/package/pion-mcp">pion-mcp on npm</a></li>
+      <li><a href="https://modelcontextprotocol.io">Model Context Protocol</a> — the open standard Pion implements.</li>
+      <li><a href="https://github.com/pi-apps/pi-platform-docs">Pi Platform documentation</a></li>
+    </ol>
+  </section>
+
+  <footer>
+    <span>© 2026 Pion. Apache-2.0.</span>
+    <span>Unofficial community project — not affiliated with or endorsed by Pi Network.</span>
+  </footer>
+
+</div>
+</body>
+</html>
