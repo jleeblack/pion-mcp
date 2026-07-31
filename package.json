@@ -1,0 +1,12 @@
+{
+  "name": "pion-mcp",
+  "version": "0.0.1",
+  "description": "Pion — Model Context Protocol (MCP) server for Pi Network. Early development stub.",
+  "keywords": ["mcp", "model-context-protocol", "pi-network", "ai-agents", "blockchain"],
+  "license": "Apache-2.0",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/jleeblack/pion-mcp.git"
+  },
+  "main": "index.js"
+}
