@@ -121,6 +121,18 @@ and wallet secret genuinely are server-owned.
   rather than a code/issuer pair.
 - Pi uids are 36-character UUIDs, not opaque short ids. Relevant because the
   A2U memo budget is 28 bytes.
+- **A Pi Sign-in `wallet_address` grant does not appear to satisfy A2U.**
+  Reproduced with a valid server API key, an attached app wallet, and a fresh
+  token whose `/v2/me` lists `wallet_address` among granted scopes: create
+  still fails with `missing_scope` for that same uid. The two surfaces read
+  different grant records. This matches the documented split — identity flows
+  out of the Pi Browser via Sign-in, payment authorization does not — and
+  suggests A2U recipients must authorize through the Pi Browser SDK
+  (`Pi.authenticate`), not Pi Sign-in. **Unconfirmed**; the remaining
+  alternative is that the OAuth client and the server API key belong to
+  different apps, which would make the uid meaningless to the paying app.
+  If it holds, the "agent pays human" primitive is limited to users onboarded
+  through the Pi Browser, which is materially narrower than the docs imply.
 - **A2U requires the recipient to have granted the `wallet_address` scope.**
   Undocumented in the A2U guide, and it is the recipient's consent that is
   missing, not the app's. `POST /v2/payments` returns `401 missing_scope` —
