@@ -215,7 +215,7 @@ Two edges worth building in:
 ## A note on the identifier length
 
 Pi payment identifiers are **exactly 28 characters** of base62 ASCII — precisely
-the Stellar `memo_text` limit, across five samples spanning both payment
+the Stellar `memo_text` limit — across **eight** samples spanning both payment
 directions. That is almost certainly deliberate, and it has a pleasant
 consequence: the identifier fits the memo with zero bytes to spare, which is
 what makes finding 4's recovery possible at all.
