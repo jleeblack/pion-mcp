@@ -167,6 +167,18 @@ Pi-Browser frontend hands it the paymentId.
   require no Pi permission, no API key, no Browser** — standard Horizon REST
 - Writing (trustlines, token minting, raw payments) requires holding a wallet secret key
 - TODO: confirm the mainnet Horizon URL and passphrase (docs cover testnet only)
+- **Block explorer: `blockexplorer.minepi.com/testnet`.** Serves the standard
+  Stellar-explorer account view — payments, operations, signing tabs — which is
+  more evidence that generic Stellar tooling conventions apply throughout, not
+  just at the SDK level. Useful as an independent third verification source: a
+  completed A2U payment was confirmed against tool report, raw Horizon, and this
+  explorer, all three agreeing (2026-08-01).
+- **App wallet transaction history was not findable inside Pi's developer
+  surfaces** — the block explorer was the only Pi-provided view located.
+  *Observed with uncertainty:* this may be a UI path that was missed rather than
+  a real absence. If it holds, it means Horizon (and therefore Pion's own read
+  tools) is the practical way to audit app wallet activity, which is a mildly
+  satisfying argument for the read tools existing.
 
 ---
 

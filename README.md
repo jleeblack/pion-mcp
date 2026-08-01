@@ -15,7 +15,7 @@ for MCPs (millicharged particles). We couldn't resist.
 
 Out of the box Pion reads and cannot spend: Tiers A and B need no credentials
 and move no value. Tier C is the exception and is off unless you arm it.
-(Tiers refer to [`docs/tool-mapping.md`](docs/tool-mapping.md).)
+(Tiers refer to [`docs/tool-mapping.md`](https://github.com/jleeblack/pion-mcp/blob/main/docs/tool-mapping.md).)
 
 **Tier A — chain reads.** Zero-permission queries against Pi's public Horizon
 API. No credentials at all.
@@ -131,7 +131,7 @@ For read-only use there is nothing to configure — `verify_user` takes its toke
 as a call argument, not from the environment. The bottom four are needed only
 if you arm payments, and belong in a secrets manager, never in a committed
 file. The mainnet Horizon URL is still an open
-question — see the TODO in [`docs/pi-sdk-notes.md`](docs/pi-sdk-notes.md).
+question — see the TODO in [`docs/pi-sdk-notes.md`](https://github.com/jleeblack/pion-mcp/blob/main/docs/pi-sdk-notes.md).
 
 ## Development
 
@@ -162,26 +162,34 @@ first failure stage end to end.
 - **`verify_user` success path — confirmed** against a live token. Returns
   `uid`, `username`, `app_id`, `scopes`, and `valid_until`. Everything but
   `uid` stays optional, since the rest depends on granted scopes.
-- **`send_payment` success path — untested end to end.** No A2U payment has
-  ever been sent with this code: that needs a real server API key and a funded
-  testnet wallet. What *is* verified is every guard, the cap boundary, and the
-  create-step failure. The sign, submit, and complete steps are unproven. Send
-  a minimum-amount payment with a low cap as your first real run.
+- **`send_payment` success path — verified on testnet (2026-08-01).** A real
+  A2U payment ran through all three irreversible steps — create, sign, submit,
+  complete — and was confirmed independently against public Horizon and Pi's
+  block explorer, not just from the tool's own report. The 28-byte memo
+  question that hung over the design is answered: Pi payment identifiers are
+  exactly 28 bytes and fit the Stellar text memo with no room to spare.
+- **`send_payment` failure paths after create — still unproven.** Sign, submit
+  and complete have each succeeded once; none has been observed *failing*
+  against live infrastructure. The two worst branches of the stranded-payment
+  report — "record created, nothing signed" and "funds left, Pi not notified" —
+  are verified by construction only. Treat `send_payment` as experimental until
+  they have been deliberately exercised.
+- **`send_payment` cannot pay an arbitrary uid.** Pi requires the *recipient*
+  to have granted your app the `wallet_address` scope, through the Pi Browser
+  SDK. A valid uid is not sufficient, and this is a permanent property of the
+  Pi API rather than a transient error — creation fails with
+  `401 missing_scope` and retrying will not help.
 
-One known unknown inside that, and it may be fatal to the current design: Pi
-matches the on-chain transaction by putting the payment identifier in a Stellar
-text memo, capped at **28 bytes**. Pi issues UUIDs elsewhere in the same API —
-a user uid is a 36-character UUID — and 36 does not fit in 28. If payment
-identifiers follow suit, the documented memo approach cannot work as written.
-`send_payment` detects this after create and refuses *before* signing, so it
-fails safely, but the design would need revisiting. `npm run probe:a2u`
-answers this without moving funds.
+Start with a minimum-amount payment and a low `PION_MAX_PAYMENT_PI`. Run
+`npm run probe:a2u <uid>` first: it exercises create and cancel without moving
+funds, and its `from_address` is the only authoritative statement of which app
+wallet Pi will actually spend from.
 
 ## Roadmap
 
 The rest of Tier C: `get_payment_status`, `list_incomplete_payments`,
 `approve_payment` / `complete_payment` / `cancel_payment` — the U2A backend half
 and the recovery tooling for stranded payments. See
-[`docs/tool-mapping.md`](docs/tool-mapping.md).
+[`docs/tool-mapping.md`](https://github.com/jleeblack/pion-mcp/blob/main/docs/tool-mapping.md).
 
 *Unofficial community project — not affiliated with Pi Network.*
