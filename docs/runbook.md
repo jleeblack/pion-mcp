@@ -93,6 +93,70 @@ body text that `upstreamFailure` truncates to 300 characters.
 Nothing in those functions logs the API key, and the fetch error is reported by
 message only, because a raw fetch error object can echo the request headers.
 
+---
+
+## A2U send — pre-flight gates
+
+Both must be green before `PION_ENABLE_PAYMENTS=1`. Neither costs anything and
+both catch failures that are expensive after a payment record exists.
+
+### Gate 1 — nothing lingering
+
+```
+$env:PI_SERVER_API_KEY = Read-Host "Server API key"
+npm run incomplete
+```
+
+Expect `✓ No incomplete server payments`. Asks Pi directly rather than trusting
+that an earlier cancel returned 200. A lingering record means a retry creates a
+second payment for the same intent.
+
+### Gate 2 — the right wallet, funded
+
+**A2U spends from the APP wallet** — the one attached to your app in the
+Developer Portal — **not your personal Pi Browser wallet.** These are different
+accounts, both yours, both funded, and only one of them works. Signing with the
+wrong key produces a transaction Pi cannot match to the payment record.
+
+Getting the secret: the Tokens guide states *"You can access your wallet's
+private key from the wallet's settings page"* — that is the Pi Wallet at
+`wallet.pi` in the Pi Browser. Path: **Pi Browser → wallet.pi → switch to the
+app wallet on testnet → settings → private key.** Switching to the app wallet is
+the step that is easy to skip, and skipping it silently gives you the personal
+wallet's key.
+
+```
+$env:PI_WALLET_SECRET = Read-Host "Wallet secret"   # keeps it out of history
+$env:PI_WALLET_SECRET.Length                        # expect 56
+npm run wallet <app-wallet-address>
+```
+
+Session-scoped in your terminal only. Never in Netlify, never in a file, never
+committed. The secret is never printed by any script here; the derived public
+key is public by definition.
+
+**Always pass the expected address.** Without it the script can only report
+"derived and funded", which is exactly what it reported on 2026-07-31 for a
+personal-wallet secret — right shape, real account, 99 Pi in it, and completely
+wrong. The app wallet's address is the `from_address` on any A2U create
+response, which `npm run probe:a2u` prints.
+
+If the derived address does not match, you have the wrong wallet. Go back and
+switch wallets in `wallet.pi` before exporting again.
+
+### If a send fails anyway
+
+`send_payment` reports which step it reached, and that determines what to do:
+
+| Step | What happened | Action |
+|---|---|---|
+| `create` | No record, no funds moved | Safe to retry |
+| `submit` | Record created, nothing signed | Cancel the stranded id before retrying — never retry blind, it creates a second payment for the same intent |
+| `complete` | **Funds have left the wallet**, Pi not notified | Do NOT retry. Complete manually via `POST /v2/payments/{id}/complete` with the txid |
+
+A `submit`-stage failure with no payment id in the message means the response
+could not be parsed; find the record with `npm run incomplete`.
+
 ### Verifying the code without a live payment
 
 `npm run u2a` exercises both functions against a local stub — the refusal paths,

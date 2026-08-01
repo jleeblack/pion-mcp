@@ -71,7 +71,32 @@ try {
 }
 
 console.log(`Horizon:    ${HORIZON_URL}`);
-console.log(`App wallet: ${publicKey}\n`);
+console.log(`Derived:    ${publicKey}\n`);
+
+// "Funded" is not the same as "the right wallet". This script used to report
+// only the first, and a personal-wallet secret sailed through it: derived fine,
+// funded fine, "ready for an A2U send" — for an account Pi would never accept
+// as the sender. If the expected address is known, check it before anything
+// else, because every later line is meaningless when this one is wrong.
+//
+// The app wallet's address is the `from_address` on any A2U create response
+// (npm run probe:a2u prints one).
+const expected = (process.argv[2] ?? process.env.PION_APP_WALLET)?.trim();
+if (expected && expected !== publicKey) {
+  console.error("WRONG WALLET. This secret does not belong to the app wallet.\n");
+  console.error(`  Expected: ${expected}`);
+  console.error(`  Derived:  ${publicKey}\n`);
+  console.error("A2U spends from the APP wallet — the one attached to your app in the");
+  console.error("Developer Portal — not from your personal Pi Browser wallet. Signing with");
+  console.error("the wrong key produces a transaction Pi cannot match to the payment record.\n");
+  console.error("Re-export from the app wallet and run this again.");
+  process.exit(1);
+}
+if (!expected) {
+  console.log("No expected address given, so this cannot tell the app wallet from your");
+  console.log("personal one. Re-run with the app wallet address to check:\n");
+  console.log("  node scripts/app-wallet.mjs G...\n");
+}
 
 const res = await fetch(`${HORIZON_URL}/accounts/${publicKey}`, {
   headers: { accept: "application/json" },
@@ -101,5 +126,12 @@ if (res.status === 404) {
   console.log(
     `\nSpendable Pi: ${native?.balance ?? "0"} (minus ~1 Pi reserve and per-tx fees)`,
   );
-  console.log("\nReady for an A2U send, provided the memo probe passes.");
+  // Only claim readiness for a wallet that was actually checked against the
+  // expected address. Unqualified, this line reads as a green light and was
+  // printed once for the wrong account.
+  console.log(
+    expected
+      ? "\nApp wallet confirmed and funded. Ready for an A2U send."
+      : "\nFunded — but unverified: pass the app wallet address to confirm this is it.",
+  );
 }
