@@ -24,7 +24,7 @@ No API key, no user consent needed. Safest possible starting tools.
 ### Tier C — Platform API with Server API Key
 | Tool | Backing call | Status | Notes |
 |---|---|---|---|
-| `send_payment` (A2U) | `POST /payments` + Stellar tx + `/complete` | ⚠️ on main, unreleased; success path untested | **testnet only**; off unless armed; **recipient must have granted `wallet_address`** — see constraint below |
+| `send_payment` (A2U) | `POST /payments` + Stellar tx + `/complete` | ✅ **success path live-verified 2026-08-01**; on main, unreleased | **testnet only**; off unless armed; **recipient must have granted `wallet_address`** — see constraint below |
 | `get_payment_status` | `GET /payments/{id}` | planned as a tool; endpoint ✅ live-verified 2026-07-31 | exercised by the approve function's pre-approval read |
 | `list_incomplete_payments` | `GET /payments/incomplete_server_payments` | planned | recovery/hygiene tool |
 | `approve_payment` | `POST /payments/{id}/approve` | planned as a tool; endpoint ✅ live-verified 2026-07-31 | backend half of U2A; shipped as a Netlify function, not yet an MCP tool |
@@ -63,8 +63,38 @@ arm it. Not registered at all when disarmed, so a default server does not
 advertise a spend tool.
 
 Guards, the cap boundary, and the create-step failure are verified
-(`npm run arming`). **The success path has never run** — it needs a real server
-API key and a funded testnet wallet. Sign, submit, and complete are unproven.
+(`npm run arming`).
+
+**A2U success path — live-verified 2026-08-01.** `send_payment` moved real
+Test-Pi end to end: create → sign → submit → complete, all three irreversible
+steps, from the app wallet to a real recipient. Independently confirmed on
+public Horizon rather than taken from the tool's own report:
+
+| | |
+|---|---|
+| payment id | `lld5WBrilTeDoTvOybVdblJQCRAH` (28 bytes) |
+| txid | `fb271ed0074847ec4bb62c76241d947f0e1439d4d3b056064f074db0f2bcc1cf` |
+| ledger | 25933848, `successful: true` |
+| from → to | `GATQBZLI…` (app wallet) → `GBZIHFFW…` (recipient) |
+| amount | 0.0000001 Pi |
+| on-chain memo | `memo_type: "text"`, `"lld5WBrilTeDoTvOybVdblJQCRAH"` — the identifier, exactly as designed |
+| fee | 100,000 stroops = 0.01 Pi |
+
+Two things this settles. The **memo design works in practice**, not just in
+principle: the 28-byte identifier is what Pi matches the transaction by, and it
+landed on-chain intact. And the **`to_address` fix was correct** — the payment
+arrived at the right account, which the previous `recipient` field could never
+have achieved.
+
+One economic note worth carrying forward: the **fee was 100,000× the payment**.
+Irrelevant for a minimum-amount test, and irrelevant for realistic amounts, but
+it means dust-sized A2U payments are dominated by fees. Any batching or
+micropayment design has to reckon with a flat per-transaction cost.
+
+Still unproven: every failure path *after* create. Submit and complete have now
+succeeded once each; they have never been observed failing against live
+infrastructure, so `strandedReport`'s two worst branches remain untested by
+anything but construction.
 
 **U2A backend — live-verified 2026-07-31.** A real 0.314 Test-Pi payment ran end
 to end through `site/pay.html` and the two Netlify functions in `netlify/`:

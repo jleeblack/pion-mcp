@@ -95,10 +95,31 @@ HTTP 400
 Undocumented, and `metadata` reads as an optional field. Sending `{}` fails;
 any non-empty object is accepted.
 
+**`metadata` is required and non-empty** — a constraint the Pi docs never state.
+
 Worth noting *how* this hid. `probe-a2u.mjs` always sent `{ probe: true }`, so
 every probe passed and the requirement was invisible — an assumption can be
 exercised hundreds of times and still never be tested, if the test data happens
 to satisfy it. It surfaced on the first send that omitted metadata.
+
+**Where the three text fields actually surface**, established from a completed
+A2U payment (tx `fb271ed0…`, 2026-08-01):
+
+| Field | Where it goes |
+|---|---|
+| `metadata` | Pi's payment record only. Echoed by the Platform API; **never on-chain** |
+| `memo` (the human note) | Pi's payment record only. Also **never on-chain** |
+| the payment `identifier` | **This** is the on-chain Stellar `memo_text` — verified: `memo_type: "text"`, `memo: "lld5WBrilTeDoTvOybVdblJQCRAH"`, matching `payment_id` exactly |
+
+So `send_payment`'s provenance default `{ source: "pion-mcp" }` is app-facing
+bookkeeping in Pi's record. It cannot leak to the chain, because the chain memo
+is spoken for by the identifier — that slot is not available to anything else,
+which is also why the 28-byte budget has no headroom.
+
+Whether Pi's own wallet UI displays `memo` or `metadata` to the recipient is
+**unverified**; `memo` is the field described as human-readable, so it is the
+likely candidate. Do not put anything in either field that would embarrass you
+if shown to the user.
 
 ### `POST /v2/payments` response shape (observed 2026-07-31)
 

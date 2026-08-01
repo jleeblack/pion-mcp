@@ -194,6 +194,40 @@ switch wallets in `wallet.pi` before exporting again.
 
 ---
 
+## Principle: hidden by incidental coverage
+
+**An assumption exercised a hundred times is not thereby tested, if the test
+data happens to satisfy it.**
+
+The sharpest general finding of this build. Two instances, both in the A2U path,
+both invisible until something ran with different inputs:
+
+- **`metadata` must be non-empty.** `probe-a2u.mjs` always sent
+  `{ probe: true }`. Every probe passed. The requirement was undocumented and
+  unmet by `send_payment`, which sent `{}` — and the first call that omitted
+  metadata failed at create.
+- **The recipient field is `to_address`, not `recipient`.** Every probe printed
+  a full response body containing `to_address` in plain sight, while the code
+  read a field that did not exist. Repetition did not help; nothing ever
+  compared the two.
+
+What both have in common: the thing repeated was *the same call with the same
+shape*. Repetition explores no new state, so a hundred runs test exactly what
+one run tests. What actually found them was **a first call from a different
+caller** — a real send rather than the probe.
+
+Practical consequences for this repo:
+
+- Treat "we have run this many times" as evidence about *one* input, not about
+  the API.
+- A probe that constructs its own request is testing its own request. Fixtures
+  in `arming-test` come from real captured responses precisely so they can
+  disagree with what the code expects.
+- When a field is optional in our schema but never omitted in practice, that is
+  the untested path. Omit it deliberately once.
+- The most informative call is the first one made by new code, not the
+  hundredth by old code.
+
 ## Secret exposure policy
 
 Decide by **what leaked**, **where it went**, and **which network it controls**
