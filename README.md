@@ -174,6 +174,14 @@ first failure stage end to end.
   report — "record created, nothing signed" and "funds left, Pi not notified" —
   are verified by construction only. Treat `send_payment` as experimental until
   they have been deliberately exercised.
+
+  This is why it ships **off**, and why turning it on takes four separate,
+  deliberate acts: `PION_ENABLE_PAYMENTS=1`, a mandatory `PION_MAX_PAYMENT_PI`
+  ceiling, both credentials, and a testnet Horizon URL. Holding the credentials
+  is not enough on its own. Disarmed, the tool is not registered at all, so an
+  agent cannot see that a spending capability exists — that gate is deliberate
+  design (see Tier C above), not a placeholder for unfinished work. The
+  experimental label is about the failure paths, not about the guards.
 - **`send_payment` cannot pay an arbitrary uid.** Pi requires the *recipient*
   to have granted your app the `wallet_address` scope, through the Pi Browser
   SDK. A valid uid is not sufficient, and this is a permanent property of the
