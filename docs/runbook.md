@@ -125,8 +125,22 @@ app wallet on testnet → settings → private key.** Switching to the app walle
 the step that is easy to skip, and skipping it silently gives you the personal
 wallet's key.
 
-```
-$env:PI_WALLET_SECRET = Read-Host "Wallet secret"   # keeps it out of history
+If the switcher shows only your personal wallet, look in the **Developer
+Portal's App Wallet section** — that is where the wallet was connected to the
+app, so it is the right next place. Be prepared for it to show the address
+without re-revealing the key: many systems disclose a secret only at creation.
+If so, the key is in whatever you saved when the wallet was created, and
+failing that the recovery path is creating a new app wallet, re-connecting it
+in the portal, and re-funding it. *(Both portal behaviours unverified — reported
+as where to look, not as what you will find.)*
+
+```powershell
+# Read-Host ECHOES what you paste — the secret lands in the terminal buffer.
+# -AsSecureString masks it; the marshalling is how PS 5.1 gets plaintext back.
+$s = Read-Host "Wallet secret" -AsSecureString
+$env:PI_WALLET_SECRET =
+  [Runtime.InteropServices.Marshal]::PtrToStringAuto(
+    [Runtime.InteropServices.Marshal]::SecureStringToBSTR($s))
 $env:PI_WALLET_SECRET.Length                        # expect 56
 npm run wallet <app-wallet-address>
 ```
@@ -134,6 +148,11 @@ npm run wallet <app-wallet-address>
 Session-scoped in your terminal only. Never in Netlify, never in a file, never
 committed. The secret is never printed by any script here; the derived public
 key is public by definition.
+
+Plain `Read-Host` keeps a secret out of *history* but not off the *screen* — it
+echoes as you paste, so the value stays in scrollback, in any terminal logging,
+and in a screenshot. Use the masked form above for wallet secrets and API keys
+alike.
 
 **Always pass the expected address.** Without it the script can only report
 "derived and funded", which is exactly what it reported on 2026-07-31 for a
@@ -143,6 +162,59 @@ response, which `npm run probe:a2u` prints.
 
 If the derived address does not match, you have the wrong wallet. Go back and
 switch wallets in `wallet.pi` before exporting again.
+
+---
+
+## Secret exposure policy
+
+Decide by **what leaked**, **where it went**, and **which network it controls**
+— not by how bad it feels. The mainnet answers are written down here so they do
+not have to be improvised under pressure.
+
+### Rotate immediately, assume compromised
+
+- Anything that controls **mainnet** value, on any exposure at all.
+- Anything **committed to git**, even if the commit was amended or the branch
+  force-pushed. Once pushed, treat it as public: forks, clones, CI caches, and
+  provider mirrors keep copies you cannot reach.
+- Anything **sent to a third party** — pasted into a web tool, an LLM, a chat, a
+  screenshot, or an issue tracker. Deletion does not undo indexing or caching.
+- Anything placed in a **hosting provider's env** that did not need it. The
+  wallet secret must never be in Netlify: nothing served from the site signs
+  transactions, so its presence there is pure exposure.
+
+### Record, do not rotate
+
+Testnet-only credentials exposed **locally and only locally** — shown on your
+own screen, held in your own shell, read by a script that never printed it.
+Test-Pi has no market value, and rotating a wallet is not a password reset:
+there is no "change the seed" operation, so it means creating a new wallet,
+re-connecting it, re-funding it, and re-verifying. That cost is not worth
+paying for test funds.
+
+Note the event and move on — but only after answering the question below.
+
+### The question that decides which bucket you are in
+
+**Does the exposed testnet key share a derivation with a mainnet key?**
+
+If the Pi Wallet's testnet and mainnet wallets come from the same passphrase,
+then a "testnet-only" seed exposure is a *mainnet* exposure wearing a disguise,
+and the first bucket applies. If they are independently derived, the second
+bucket does.
+
+**This is unverified for Pi and must be answered before relying on the second
+bucket.** Until it is, treat a personal-wallet seed exposure as
+rotate-if-convenient rather than confidently safe.
+
+### Recorded events
+
+- **2026-07-31 — personal testnet wallet seed, local only.** Exported while
+  reaching for the app wallet secret, entered via echoing `Read-Host` (so it
+  reached the terminal buffer), read by `npm run wallet`, never printed, never
+  written to disk, never committed, never transmitted. Bucket 2 *conditional on
+  the derivation question above*. Env var overwritten in-session. No app wallet
+  or server key was involved.
 
 ### If a send fails anyway
 
