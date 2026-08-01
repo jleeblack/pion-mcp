@@ -196,7 +196,14 @@ Pi-Browser frontend hands it the paymentId.
 - **Block explorer: `blockexplorer.minepi.com/testnet`.** Serves the standard
   Stellar-explorer account view — payments, operations, signing tabs — which is
   more evidence that generic Stellar tooling conventions apply throughout, not
-  just at the SDK level. Useful as an independent third verification source: a
+  just at the SDK level. A transaction is at
+  `/testnet/tx/<hash>` (confirmed rendering 2026-08-01), and the page shows the
+  fee in Pi rather than stroops.
+
+  **It is a client-side app: every path returns HTTP 200**, including a bogus
+  hash and outright nonsense, and the transaction data is not in the served
+  HTML. A status-code check therefore proves nothing about an explorer link —
+  the only way to verify one is to open it. Useful as an independent third verification source: a
   completed A2U payment was confirmed against tool report, raw Horizon, and this
   explorer, all three agreeing (2026-08-01).
 - **App wallet transaction history was not findable inside Pi's developer
