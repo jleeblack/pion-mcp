@@ -13,10 +13,16 @@
  * secret is never printed; the public key is public by definition.
  *
  * Usage:
- *   $env:PI_WALLET_SECRET = Read-Host "Wallet secret"   # keeps it out of history
- *   node scripts/app-wallet.mjs
+ *   $s = Read-Host "Wallet secret" -AsSecureString   # masked; plain Read-Host echoes
+ *   $env:PI_WALLET_SECRET = [Runtime.InteropServices.Marshal]::PtrToStringAuto(
+ *     [Runtime.InteropServices.Marshal]::SecureStringToBSTR($s))
+ *   node scripts/app-wallet.mjs <app-wallet-address>
  */
 import { Keypair } from "@stellar/stellar-sdk";
+
+import { refuseSecretsInArgv } from "./guard-argv.mjs";
+
+refuseSecretsInArgv();
 
 const HORIZON_URL = (process.env.PION_HORIZON_URL ?? "https://api.testnet.minepi.com").replace(
   /\/+$/,
@@ -34,7 +40,9 @@ if (!secret) {
       : "PI_WALLET_SECRET is not set in this shell.\n",
   );
   console.error("Set it without leaving the value in PowerShell history:");
-  console.error('  $env:PI_WALLET_SECRET = Read-Host "Wallet secret"');
+  console.error('  $s = Read-Host "Wallet secret" -AsSecureString');
+  console.error("  $env:PI_WALLET_SECRET = [Runtime.InteropServices.Marshal]::PtrToStringAuto(");
+  console.error("    [Runtime.InteropServices.Marshal]::SecureStringToBSTR($s))");
   console.error("\nPaste at the prompt, then press Enter. Confirm with:");
   console.error("  $env:PI_WALLET_SECRET.Length     # expect 56");
   process.exit(1);

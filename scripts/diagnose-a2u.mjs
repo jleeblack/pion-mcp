@@ -17,6 +17,10 @@
  * Usage:
  *   PI_SERVER_API_KEY=... node scripts/diagnose-a2u.mjs <uid> [expected-app-id]
  */
+import { refuseSecretsInArgv } from "./guard-argv.mjs";
+
+refuseSecretsInArgv();
+
 const PLATFORM_URL = (process.env.PION_PLATFORM_URL ?? "https://api.minepi.com").replace(
   /\/+$/,
   "",

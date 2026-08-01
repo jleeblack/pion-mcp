@@ -217,7 +217,36 @@ bucket does.
 bucket.** Until it is, treat a personal-wallet seed exposure as
 rotate-if-convenient rather than confidently safe.
 
+### Clearing a leaked secret from a Windows shell
+
+Overwriting the env var is not enough — the value persists in history and
+scrollback:
+
+```powershell
+Clear-History                                          # this session
+Remove-Item (Get-PSReadlineOption).HistorySavePath     # the persistent file
+$env:PI_WALLET_SECRET = $null
+```
+
+Then close the terminal to drop the scrollback buffer. None of this reaches a
+value that already left the machine.
+
 ### Recorded events
+
+- **2026-07-31 — app wallet seed on a command line. Bucket 1, rotate.**
+  A clipboard holding the app wallet secret was pasted onto a `probe:a2u`
+  command line rather than into a prompt, concatenating it onto the uid. It
+  therefore reached PowerShell history, the terminal buffer, **and Pi's servers**
+  — the script sent it as the `uid` field of a create request before any check
+  could object — as well as the working transcript. Transmitted off-machine to
+  a third party, so the policy above gives one answer regardless of testnet
+  stakes: rotate.
+
+  Fixed forward by `scripts/guard-argv.mjs`, wired into every script that takes
+  arguments. "Credentials go in the environment, never in an argument" had been
+  a convention documented in comments; it is now a check that runs before any
+  network call. A convention that depends on nobody mis-pasting is not a
+  control.
 
 - **2026-07-31 — personal testnet wallet seed, local only.** Exported while
   reaching for the app wallet secret, entered via echoing `Read-Host` (so it

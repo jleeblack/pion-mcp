@@ -16,6 +16,10 @@
  *   node scripts/pi-signin.mjs <oauth-client-id>
  *   PI_OAUTH_CLIENT_ID=... node scripts/pi-signin.mjs
  */
+import { refuseSecretsInArgv } from "./guard-argv.mjs";
+
+refuseSecretsInArgv();
+
 import http from "node:http";
 import { spawn } from "node:child_process";
 

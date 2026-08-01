@@ -19,6 +19,10 @@
  * The uid must be a real one from your app (verify_user returns it). Pi
  * validates it, so a made-up value will be rejected at create.
  */
+import { refuseSecretsInArgv } from "./guard-argv.mjs";
+
+refuseSecretsInArgv();
+
 const PLATFORM_URL = (
   process.env.PION_PLATFORM_URL ?? "https://api.minepi.com"
 ).replace(/\/+$/, "");

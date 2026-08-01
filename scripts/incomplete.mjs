@@ -14,6 +14,10 @@
  *   $env:PI_SERVER_API_KEY = Read-Host "Server API key"
  *   node scripts/incomplete.mjs
  */
+import { refuseSecretsInArgv } from "./guard-argv.mjs";
+
+refuseSecretsInArgv();
+
 const PLATFORM_URL = (process.env.PION_PLATFORM_URL ?? "https://api.minepi.com").replace(
   /\/+$/,
   "",
