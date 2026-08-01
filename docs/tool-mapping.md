@@ -164,6 +164,33 @@ and wallet secret genuinely are server-owned.
    paymentId and the server carried the approve/complete halves (2026-07-31).
 2. A2U = the "agent pays human" primitive; combined with the allowance-delegation
    concept, the app wallet becomes the agent's leashed spending account.
+
+   **Fee floor — a hard constraint on that primitive.** The first live send paid
+   **100,000 stroops (0.01 Pi) in fees to move 0.0000001 Pi**: a 100,000×
+   overhead. The fee is per-transaction and flat, set by the network via
+   `fetchBaseFee()` rather than chosen by us, and it can rise under congestion —
+   0.01 Pi is an observed floor, not a ceiling.
+
+   What that rules out. A per-transaction A2U payment is only rational when the
+   amount is large relative to 0.01 Pi: at 1 Pi the fee is 1%, at 10 Pi it is
+   0.1%, and below roughly 0.1 Pi the fee starts to dominate the transfer.
+   **Dust-sized agent micropayments do not work on-chain**, which matters
+   because "agent pays a fraction of a cent per task" is exactly the shape the
+   agent-economy designs this project exists to explore would naturally reach
+   for.
+
+   What that implies for design. Anything settling sub-0.01-Pi exchanges needs
+   **aggregation above the fee floor** rather than one transaction per event:
+   an off-chain credit ledger settled periodically, batched payouts per
+   recipient, or a threshold that withholds payment until the accumulated
+   balance makes a transaction worth its fee. A task board that pays per task
+   must either price tasks well above the floor or batch settlement — those are
+   the only two options, and the choice belongs in the design rather than being
+   discovered after the first thousand dust payments.
+
+   Unverified: whether mainnet fees differ, and whether Pi offers any
+   fee-bumping or channel mechanism. Both are on `pre-mainnet.md`'s territory if
+   A2U ever leaves testnet.
 3. Open questions — still unanswered after the Tier A/B/C build:
    - Mainnet Horizon URL + network passphrase
    - Whether GET /payments requires the payment to belong to our app (Tier C).

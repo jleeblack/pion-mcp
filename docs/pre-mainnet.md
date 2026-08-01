@@ -43,6 +43,16 @@ Documented only for testnet (`api.testnet.minepi.com`, passphrase `Pi Testnet`).
 `checkPaymentsArming` refuses any Horizon URL without `testnet` in it, so this
 is currently a hard block by design rather than an oversight.
 
+### Do mainnet transaction fees differ from testnet's 0.01 Pi?
+
+Testnet charged **100,000 stroops (0.01 Pi)** per A2U transaction, flat and
+per-transaction (`tool-mapping.md`, design implication 2). That number sets the
+floor below which agent micropayments stop being rational, so the mainnet figure
+directly shapes what an agent economy on Pi can look like.
+
+Also unknown: whether Pi offers any fee-bumping, batching, or payment-channel
+mechanism that would let sub-floor exchanges settle economically.
+
 ### Is A2U available on mainnet at all?
 
 `payments_advanced.md` states A2U is "currently available only on the Testnet."
