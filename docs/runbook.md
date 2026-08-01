@@ -163,16 +163,16 @@ npm run probe:a2u <your-uid>
 Confirm `from_address` on the create response is the wallet above. The probe
 cancels its own record, so it costs nothing.
 
-**This is not a formality.** On 2026-08-01 the Portal showed `GATQBZLI…` while
-Pi still returned `from_address: GAXGSA34…`, the retired wallet. It corrected
-itself 6m17s later — see `pi-sdk-notes.md`. Configuring a wallet in the Portal
-and Pi using it are two different facts, separated by minutes, and only
-`from_address` establishes the second.
+**This is not a formality.** Creating an app wallet in the Portal does not
+select it, and only the selected wallet is spent from. On 2026-08-01 a newly
+created wallet sat unselected while Pi kept using the old one — see
+`pi-sdk-notes.md`. `from_address` is the only place the selection is
+observable.
 
-If they disagree, **do not arm.** Signing with the wallet you configured
-produces a transfer Pi is not expecting: the funds leave, `/complete` cannot
-verify them, and the payment stays incomplete. Give it a few minutes and re-run
-this gate until Pi's answer matches; the probe is free and self-cleaning.
+If it names a different wallet, **do not arm** — signing with a wallet Pi is
+not expecting moves funds `/complete` cannot verify. Go and *select* the right
+wallet in the Portal, then re-run this gate; the change is visible within
+seconds, and the probe is free and self-cleaning.
 
 Session-scoped in your terminal only. Never in Netlify, never in a file, never
 committed. The secret is never printed by any script here; the derived public
@@ -243,31 +243,34 @@ app's live spending account: an attacker holding it can sign transactions from
 the same wallet you are trying to protect, and you cannot revoke a Stellar seed.
 You are racing someone with identical authority over the funds.
 
-The measured fact that shapes the response: **replacing the app wallet in the
-Portal is not instantaneous.** Observed once on testnet at **6 minutes 17
-seconds** between "Portal shows the new wallet" and "Pi stops using the old
-one". For that entire window Pi keeps spending from the compromised wallet. That
-gap is the emergency.
+The measured fact that shapes the response: **creating a replacement wallet
+does not switch anything — selecting it does, and selection takes effect within
+seconds.** Verified 2026-08-01: a new wallet left unselected meant Pi kept
+spending from the old one indefinitely; once selected by hand, a probe under 30
+seconds later already showed the change.
 
-Order matters, because the slowest step is the one you do not control:
+So the exposure window is not a delay you wait out. It is exactly as long as it
+takes you to perform the selection step — which means the single highest-value
+action is knowing that the step exists.
 
-1. **Start the wallet swap first.** It is the long pole — begin it before
-   anything else so the clock runs while you work.
-2. **Move the funds out** of the compromised wallet to an address you control.
-   You and the attacker have equal claim; whoever signs first wins. Accept that
-   this breaks A2U sends until the swap lands — an A2U failing for insufficient
-   funds is enormously better than an attacker draining the account.
-3. **Disarm payments** — unset `PION_ENABLE_PAYMENTS`. During the window,
-   `send_payment` would sign with the *new* key while Pi still expects the old
-   one, which moves funds Pi cannot verify. Refusing to send beats sending into
-   a mismatch.
-4. **Poll `npm run probe:a2u <uid>`** and read only `from_address`. This is the
-   only signal that the swap has taken; the Portal showing the new wallet does
-   not mean Pi is using it.
-5. **Re-arm only after** `from_address` matches and `npm run wallet <address>`
-   confirms the loaded secret derives to that same wallet.
+1. **Create the new wallet and SELECT it, immediately, before anything else.**
+   Creation alone changes nothing; an unselected new wallet leaves the
+   compromised one spending. This is the step that stops the bleeding and it
+   takes seconds.
+2. **Disarm payments** — unset `PION_ENABLE_PAYMENTS`. Your loaded
+   `PI_WALLET_SECRET` is now the *old* wallet's while Pi expects the new one, so
+   `send_payment` would move funds Pi cannot verify. Refusing to send beats
+   signing into a mismatch.
+3. **Move the funds out** of the compromised wallet to an address you control.
+   You and the attacker hold identical authority; whoever signs first wins.
+4. **Confirm with `npm run probe:a2u <uid>`** — read only `from_address`. This
+   is the only place the selection is observable.
+5. **Re-arm only after** `from_address` matches *and* `npm run wallet <address>`
+   confirms the newly loaded secret derives to that same wallet.
 
-Do not skip step 3 on the theory that the swap is quick. It was not.
+The old wallet cannot be deleted — see `pi-sdk-notes.md`. It stays in the
+selector permanently, so a compromised wallet remains one mis-click from being
+live again. Draining it in step 3 is what makes that mis-click harmless.
 
 On testnet, all of this is a rehearsal — the balance is worthless, so the
 correct move is to run the procedure anyway and time it.

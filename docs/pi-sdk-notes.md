@@ -172,44 +172,55 @@ Nothing in this repo hardcodes the app wallet address; it is supplied per-run
 to `npm run wallet` and recorded in `runbook.md`. Verified by grep at the time
 of the swap, and worth re-checking if that ever changes.
 
-### Observed: the Portal's app wallet and Pi's payment system can disagree
+### Creating an app wallet does not select it
 
-**Replacing the app wallet in the Developer Portal does not necessarily change
-the wallet Pi actually uses.** Confirmed 2026-08-01: with the Portal showing
-`GATQBZLI…` as the app wallet, `POST /v2/payments` still returned
-`from_address: GAXGSA34…` — the previous, retired wallet.
+**Creation and selection are separate steps in the Developer Portal, and only
+selection changes what Pi spends from.** A newly created wallet sits alongside
+the existing ones; the previously selected wallet stays selected until you
+explicitly change it.
 
-Two sources of truth, and only one of them decides where funds come from:
+Established deliberately on 2026-08-01. A new wallet was created and left
+unselected, to test whether Pi was genuinely still using the old one or whether
+the Portal was merely showing stale state. `POST /v2/payments` returned
+`from_address: GAXGSA34…`, the old wallet — Pi really was still spending from
+it. After the selection was changed by hand, the next create returned
+`from_address: GATQBZLI…`.
 
-- **The Portal UI** is what you configured.
-- **`from_address` on a create response** is what Pi will actually use, and it
-  is the only one that matters for A2U.
+**Selection takes effect immediately.** A probe run within ~30 seconds of
+changing it already returned the new wallet. So there is no sync gap and no
+propagation delay: **Pi's `from_address` was accurate at every point**, and the
+~6 minutes between the two probes was entirely human — the time taken to go and
+click. An earlier version of this note recorded a Portal-versus-Pi
+disagreement and a possible propagation delay; both were our inference rather
+than observation, and both were wrong. `from_address` has never once
+misreported the selected wallet.
 
-Consequences if they disagree. Signing with the newly configured wallet
-produces a transaction from an account Pi is not expecting, so the transfer
-happens but `/complete` cannot verify it — funds leave, the payment stays
-incomplete. And a wallet you believe is retired is still the live spending
-account, which turns "that key no longer matters" into a false assumption —
-sharply so when the reason it was retired is that its seed is public.
+Consequences worth keeping:
 
-**It does resolve.** A re-probe at 02:44 UTC — 6 minutes 17 seconds after the
-one that returned the old wallet — came back with `from_address: GATQBZLI…`.
-So app wallets are **not** pinned: a swap does take effect, and a compromised
-app wallet can be replaced. That was the open worry and it is closed.
+- **Creating a replacement wallet accomplishes nothing on its own.** If the
+  reason for replacing it is a compromised key, the compromised wallet keeps
+  spending until the selection changes. The exposure window is not something you
+  wait out — it is however long you take to perform the second step, and it
+  closes within seconds once you do. That is good news under pressure: the fix
+  is fast, provided you know it is a separate action.
+- **`from_address` on a create response is the only authoritative statement of
+  which wallet is selected.** This is what makes gate 2b permanent: not because
+  Pi lags, but because it is the one place the selection is observable.
 
-What is *not* established is why it took six minutes. Propagation delay and an
-explicit re-connect in the Portal are both consistent with the observation, and
-they imply different instructions ("wait" versus "click this"). Unresolved —
-whoever next swaps a wallet should note whether they touched the Portal in
-between.
+### Old app wallets stay live and selectable
 
-The lasting consequence is the **window**. Between retiring a wallet and Pi
-actually ceasing to use it, the old wallet is still the live spending account.
-On testnet that is a curiosity. On mainnet, when the reason for the swap is a
-compromised key, that window is an emergency — see `runbook.md`.
+Retired wallets are not removed. They remain in the Portal's wallet selector
+indefinitely — **no deletion mechanism was found** — and they remain funded,
+real accounts on-chain.
 
-A create-response check therefore belongs in the pre-flight sequence
-permanently, not only after a swap.
+The consequence is that a wallet retired *because its key leaked* stays one
+mis-click away from being the app's spending account again. Retiring a wallet
+in this project therefore means: stop selecting it, drain it, and treat its
+balance as forfeit. It does not mean the wallet is gone, because it cannot be.
+
+Unverified whether deletion exists on mainnet or is withheld on testnet
+specifically. Worth establishing before a mainnet key ever leaks, because
+"remove the compromised wallet" may simply not be an available action.
 
 ## Developer Portal requirements
 
