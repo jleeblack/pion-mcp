@@ -231,22 +231,44 @@ $env:PI_WALLET_SECRET = $null
 Then close the terminal to drop the scrollback buffer. None of this reaches a
 value that already left the machine.
 
+### Drills
+
+Deliberately exposing a worthless testnet credential to test this policy is
+encouraged, not a violation of it. It is the only way to measure a blast radius
+rather than guess at one, and every control in this file that exists because of
+a drill is a control that did not have to be paid for with a real key.
+
+Record a drill as a drill. The distinction matters when someone reads this
+later: an accident says people need reminding, a drill says the system needed a
+check — and the second one is actionable.
+
 ### Recorded events
 
-- **2026-07-31 — app wallet seed on a command line. Bucket 1, rotate.**
-  A clipboard holding the app wallet secret was pasted onto a `probe:a2u`
-  command line rather than into a prompt, concatenating it onto the uid. It
-  therefore reached PowerShell history, the terminal buffer, **and Pi's servers**
-  — the script sent it as the `uid` field of a create request before any check
-  could object — as well as the working transcript. Transmitted off-machine to
-  a third party, so the policy above gives one answer regardless of testnet
-  stakes: rotate.
+- **2026-07-31 — argv exposure drill. Deliberate; produced a control.**
+  A testnet app wallet seed was intentionally pasted onto a `probe:a2u` command
+  line, concatenated onto the uid, to exercise the failure mode while the stakes
+  were zero. Chosen deliberately: a worthless key on testnet is the cheapest
+  possible way to learn what an argv leak actually touches, and the alternative
+  is discovering it with a key that matters.
 
-  Fixed forward by `scripts/guard-argv.mjs`, wired into every script that takes
-  arguments. "Credentials go in the environment, never in an argument" had been
-  a convention documented in comments; it is now a check that runs before any
-  network call. A convention that depends on nobody mis-pasting is not a
-  control.
+  **Blast radius, measured rather than assumed.** One mis-paste put the seed in
+  PowerShell history (including the persistent PSReadLine file), the terminal
+  scrollback, the working transcript, and **Pi's own server logs** — the script
+  posted it as the `uid` field of a create request before anything could object.
+  That last one is the finding: a leaked argument does not stay local, and by
+  the time the request returns, remediation is out of your hands.
+
+  **Control built:** `scripts/guard-argv.mjs`, wired into every script that takes
+  arguments, refusing before any network call. "Credentials go in the
+  environment, never in an argument" had been a convention documented in
+  comments — including in the usage text printed directly above where the seed
+  went in. The drill's actual lesson is that a convention depending on nobody
+  mis-pasting is not a control, and the fix is mechanical enforcement rather
+  than a better-worded warning.
+
+  The drilled key stays retired: it is real in the sense that anyone reading the
+  transcript can sweep its balance, and a drained wallet would surface later as
+  a confusing submit-stage failure.
 
 - **2026-07-31 — personal testnet wallet seed, local only.** Exported while
   reaching for the app wallet secret, entered via echoing `Read-Host` (so it
