@@ -102,8 +102,10 @@ both catch failures that are expensive after a payment record exists.
 
 ### Gate 1 — nothing lingering
 
-```
-$env:PI_SERVER_API_KEY = Read-Host "Server API key"
+```powershell
+$s = Read-Host "Server API key" -AsSecureString
+$env:PI_SERVER_API_KEY = [Runtime.InteropServices.Marshal]::PtrToStringAuto(
+  [Runtime.InteropServices.Marshal]::SecureStringToBSTR($s))
 npm run incomplete
 ```
 
@@ -142,11 +144,11 @@ $env:PI_WALLET_SECRET =
   [Runtime.InteropServices.Marshal]::PtrToStringAuto(
     [Runtime.InteropServices.Marshal]::SecureStringToBSTR($s))
 $env:PI_WALLET_SECRET.Length                        # expect 56
-npm run wallet GAXGSA3464LANSVET73TXYDWDCLFLSW26HAG3XZVD2CCQA5QYWBUZWMT
+npm run wallet GATQBZLIAUVMND2OCPOKWGPUCNXIGKMNUU7E67YQI2MODSMCMLXBAIJA
 ```
 
-**Current app wallet: `GAXGSA3464LANSVET73TXYDWDCLFLSW26HAG3XZVD2CCQA5QYWBUZWMT`**
-(replaced 2026-07-31; the previous one is retired — see `pi-sdk-notes.md`).
+**Current app wallet: `GATQBZLIAUVMND2OCPOKWGPUCNXIGKMNUU7E67YQI2MODSMCMLXBAIJA`**
+(third wallet, 2026-07-31; the two before it are retired — see `pi-sdk-notes.md`).
 
 That check proves the secret matches the address you typed. It does **not**
 prove Pi agrees this is the app wallet — for that, the address has to come from

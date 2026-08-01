@@ -157,7 +157,8 @@ payment record.
 
 | Address | Status | Notes |
 |---|---|---|
-| `GAXGSA34…QYWBUZWMT` | **current** (from 2026-07-31) | testnet |
+| `GATQBZLI…CMLXBAIJA` | **current** (from 2026-07-31) | testnet, funded 100 Pi |
+| `GAXGSA34…QYWBUZWMT` | retired 2026-07-31 | seed deliberately exposed in an argv drill (see `runbook.md`); retired by policy, balance abandoned |
 | `GBFVD7J2…VM4IZUOB4` | retired 2026-07-31 | secret unrecoverable — screenshot truncated, passphrase lost; ~100.9 Test-Pi abandoned with it |
 
 Replacing a wallet is the recovery path when its secret is lost, because there
