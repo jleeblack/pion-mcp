@@ -157,8 +157,8 @@ payment record.
 
 | Address | Status | Notes |
 |---|---|---|
-| `GATQBZLI…CMLXBAIJA` | **current** (from 2026-07-31) | testnet, funded 100 Pi |
-| `GAXGSA34…QYWBUZWMT` | retired 2026-07-31 | seed deliberately exposed in an argv drill (see `runbook.md`); retired by policy, balance abandoned |
+| `GATQBZLI…CMLXBAIJA` | **intended current** (from 2026-07-31) | testnet, funded 100 Pi. **Not yet in use by Pi** — see below |
+| `GAXGSA34…QYWBUZWMT` | retired in the Portal, **still live in Pi's payment system** as of 2026-08-01 | seed deliberately exposed in an argv drill (see `runbook.md`); still funded 100 Pi |
 | `GBFVD7J2…VM4IZUOB4` | retired 2026-07-31 | secret unrecoverable — screenshot truncated, passphrase lost; ~100.9 Test-Pi abandoned with it |
 
 Replacing a wallet is the recovery path when its secret is lost, because there
@@ -171,6 +171,31 @@ from a screenshot.
 Nothing in this repo hardcodes the app wallet address; it is supplied per-run
 to `npm run wallet` and recorded in `runbook.md`. Verified by grep at the time
 of the swap, and worth re-checking if that ever changes.
+
+### Observed: the Portal's app wallet and Pi's payment system can disagree
+
+**Replacing the app wallet in the Developer Portal does not necessarily change
+the wallet Pi actually uses.** Confirmed 2026-08-01: with the Portal showing
+`GATQBZLI…` as the app wallet, `POST /v2/payments` still returned
+`from_address: GAXGSA34…` — the previous, retired wallet.
+
+Two sources of truth, and only one of them decides where funds come from:
+
+- **The Portal UI** is what you configured.
+- **`from_address` on a create response** is what Pi will actually use, and it
+  is the only one that matters for A2U.
+
+Consequences if they disagree. Signing with the newly configured wallet
+produces a transaction from an account Pi is not expecting, so the transfer
+happens but `/complete` cannot verify it — funds leave, the payment stays
+incomplete. And a wallet you believe is retired is still the live spending
+account, which turns "that key no longer matters" into a false assumption —
+sharply so when the reason it was retired is that its seed is public.
+
+Whether this resolves by propagation delay, by an explicit re-connect step in
+the Portal, or by something else is **unknown**. What is established is that the
+disagreement is possible, so a create-response check belongs in the pre-flight
+sequence permanently rather than only after a wallet swap.
 
 ## Developer Portal requirements
 

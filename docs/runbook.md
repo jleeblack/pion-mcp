@@ -152,10 +152,26 @@ npm run wallet GATQBZLIAUVMND2OCPOKWGPUCNXIGKMNUU7E67YQI2MODSMCMLXBAIJA
 
 That check proves the secret matches the address you typed. It does **not**
 prove Pi agrees this is the app wallet — for that, the address has to come from
-Pi rather than from you. `npm run probe:a2u <uid>` prints `from_address` on the
-create response, which is Pi's own answer. After replacing a wallet, run it
-once and confirm `from_address` is the address above; the probe cancels its own
-record, so this costs nothing.
+Pi rather than from you.
+
+### Gate 2b — Pi's own answer (never skip this)
+
+```
+npm run probe:a2u <your-uid>
+```
+
+Confirm `from_address` on the create response is the wallet above. The probe
+cancels its own record, so it costs nothing.
+
+**This is not a formality.** On 2026-08-01 the Portal showed `GATQBZLI…` while
+Pi still returned `from_address: GAXGSA34…`, the retired wallet — see
+`pi-sdk-notes.md`. Configuring a wallet in the Portal and Pi using it are two
+different facts, and only `from_address` establishes the second.
+
+If they disagree, **do not arm.** Signing with the wallet you configured
+produces a transfer Pi is not expecting: the funds leave, `/complete` cannot
+verify them, and the payment stays incomplete. Re-check the Portal's wallet
+connection, give it time, and re-run this gate until Pi's answer matches.
 
 Session-scoped in your terminal only. Never in Netlify, never in a file, never
 committed. The secret is never printed by any script here; the derived public
