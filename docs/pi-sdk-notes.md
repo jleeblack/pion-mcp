@@ -85,6 +85,21 @@ A 401 `missing_scope` also implies Pi resolved the uid *within the calling app*
 — an unknown uid fails differently — so this error doubles as weak confirmation
 that the uid and the server API key belong to the same app.
 
+### `POST /v2/payments` rejects empty metadata (observed 2026-08-01)
+
+```
+HTTP 400
+{"error":"invalid_metadata","error_message":"Metadata can't be empty."}
+```
+
+Undocumented, and `metadata` reads as an optional field. Sending `{}` fails;
+any non-empty object is accepted.
+
+Worth noting *how* this hid. `probe-a2u.mjs` always sent `{ probe: true }`, so
+every probe passed and the requirement was invisible — an assumption can be
+exercised hundreds of times and still never be tested, if the test data happens
+to satisfy it. It surfaced on the first send that omitted metadata.
+
 ### `POST /v2/payments` response shape (observed 2026-07-31)
 
 From a live A2U create. Field names here are load-bearing and several are not

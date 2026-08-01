@@ -5,6 +5,7 @@ import { HORIZON_URL } from "../horizon.js";
 import { platformPostAsApp } from "../platform.js";
 import {
   parseCreatedPayment,
+  paymentMetadata,
   recordedAmountToStroops,
   toStroops,
   type CreatedPayment,
@@ -114,7 +115,11 @@ export function registerSendPayment(server: McpServer, config: PaymentsConfig): 
         metadata: z
           .record(z.string(), z.unknown())
           .optional()
-          .describe("Optional structured data stored alongside the payment on Pi's side."),
+          .describe(
+            "Optional structured data stored alongside the payment on Pi's side. " +
+              "Pi rejects an empty metadata object, so a provenance default is sent " +
+              "when this is omitted.",
+          ),
       },
       outputSchema,
       annotations: {
@@ -175,7 +180,7 @@ export function registerSendPayment(server: McpServer, config: PaymentsConfig): 
       try {
         // ---- Step 1: create the payment record with Pi. Reversible. ----
         const raw = await platformPostAsApp<unknown>("/v2/payments", config.serverApiKey, {
-          payment: { amount: Number(amount), memo, metadata: metadata ?? {}, uid },
+          payment: { amount: Number(amount), memo, metadata: paymentMetadata(metadata), uid },
         });
 
         // A record may now exist even if we cannot read it. Recover the id from

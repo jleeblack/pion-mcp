@@ -17,6 +17,7 @@ import { Keypair } from "@stellar/stellar-sdk";
 import {
   checkPaymentsArming,
   parseCreatedPayment,
+  paymentMetadata,
   recordedAmountToStroops,
   toStroops,
 } from "../dist/payments.js";
@@ -127,6 +128,21 @@ check("7 decimal places accepted", () => assert.equal(toStroops("1.0000001"), 10
 check("8 decimal places rejected", () => assert.equal(toStroops("1.00000001"), null));
 check("negative rejected", () => assert.equal(toStroops("-1"), null));
 check("non-numeric rejected", () => assert.equal(toStroops("1e5"), null));
+
+console.log("\nCreate-request metadata — Pi rejects an empty object:");
+
+check("supplies a default when metadata is omitted", () =>
+  assert.ok(Object.keys(paymentMetadata(undefined)).length > 0),
+);
+check("supplies a default when metadata is an empty object", () =>
+  assert.ok(Object.keys(paymentMetadata({})).length > 0),
+);
+check("passes caller metadata through untouched", () =>
+  assert.deepEqual(paymentMetadata({ order: "abc", n: 1 }), { order: "abc", n: 1 }),
+);
+check("the default carries provenance and nothing about the user", () =>
+  assert.deepEqual(paymentMetadata(), { source: "pion-mcp" }),
+);
 
 console.log("\nCreate-response parsing — the fields send_payment depends on:");
 

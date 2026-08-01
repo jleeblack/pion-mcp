@@ -48,6 +48,23 @@ export function toStroops(amount: string): bigint | null {
 }
 
 /**
+ * Metadata for a create-payment call, guaranteed non-empty.
+ *
+ * Pi rejects `POST /v2/payments` with `400 invalid_metadata` — "Metadata can't
+ * be empty" — when the field is `{}`. This is undocumented, and it is invisible
+ * in testing if every probe happens to pass something: ours did, so an omitted
+ * metadata argument stayed broken until the first real send (2026-08-01).
+ *
+ * The default carries provenance and nothing about the user.
+ */
+export function paymentMetadata(
+  supplied?: Record<string, unknown>,
+): Record<string, unknown> {
+  if (supplied && Object.keys(supplied).length > 0) return supplied;
+  return { source: "pion-mcp" };
+}
+
+/**
  * Runtime shape check for the create-payment fields `send_payment` depends on.
  *
  * Parsed rather than cast, on purpose. An earlier version of this codebase
