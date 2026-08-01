@@ -164,14 +164,15 @@ Confirm `from_address` on the create response is the wallet above. The probe
 cancels its own record, so it costs nothing.
 
 **This is not a formality.** On 2026-08-01 the Portal showed `GATQBZLI…` while
-Pi still returned `from_address: GAXGSA34…`, the retired wallet — see
-`pi-sdk-notes.md`. Configuring a wallet in the Portal and Pi using it are two
-different facts, and only `from_address` establishes the second.
+Pi still returned `from_address: GAXGSA34…`, the retired wallet. It corrected
+itself 6m17s later — see `pi-sdk-notes.md`. Configuring a wallet in the Portal
+and Pi using it are two different facts, separated by minutes, and only
+`from_address` establishes the second.
 
 If they disagree, **do not arm.** Signing with the wallet you configured
 produces a transfer Pi is not expecting: the funds leave, `/complete` cannot
-verify them, and the payment stays incomplete. Re-check the Portal's wallet
-connection, give it time, and re-run this gate until Pi's answer matches.
+verify them, and the payment stays incomplete. Give it a few minutes and re-run
+this gate until Pi's answer matches; the probe is free and self-cleaning.
 
 Session-scoped in your terminal only. Never in Netlify, never in a file, never
 committed. The secret is never printed by any script here; the derived public
@@ -234,6 +235,42 @@ bucket does.
 **This is unverified for Pi and must be answered before relying on the second
 bucket.** Until it is, treat a personal-wallet seed exposure as
 rotate-if-convenient rather than confidently safe.
+
+### EMERGENCY — the app wallet's key is compromised
+
+**On mainnet this is an incident, not a task.** The compromised key is the
+app's live spending account: an attacker holding it can sign transactions from
+the same wallet you are trying to protect, and you cannot revoke a Stellar seed.
+You are racing someone with identical authority over the funds.
+
+The measured fact that shapes the response: **replacing the app wallet in the
+Portal is not instantaneous.** Observed once on testnet at **6 minutes 17
+seconds** between "Portal shows the new wallet" and "Pi stops using the old
+one". For that entire window Pi keeps spending from the compromised wallet. That
+gap is the emergency.
+
+Order matters, because the slowest step is the one you do not control:
+
+1. **Start the wallet swap first.** It is the long pole — begin it before
+   anything else so the clock runs while you work.
+2. **Move the funds out** of the compromised wallet to an address you control.
+   You and the attacker have equal claim; whoever signs first wins. Accept that
+   this breaks A2U sends until the swap lands — an A2U failing for insufficient
+   funds is enormously better than an attacker draining the account.
+3. **Disarm payments** — unset `PION_ENABLE_PAYMENTS`. During the window,
+   `send_payment` would sign with the *new* key while Pi still expects the old
+   one, which moves funds Pi cannot verify. Refusing to send beats sending into
+   a mismatch.
+4. **Poll `npm run probe:a2u <uid>`** and read only `from_address`. This is the
+   only signal that the swap has taken; the Portal showing the new wallet does
+   not mean Pi is using it.
+5. **Re-arm only after** `from_address` matches and `npm run wallet <address>`
+   confirms the loaded secret derives to that same wallet.
+
+Do not skip step 3 on the theory that the swap is quick. It was not.
+
+On testnet, all of this is a rehearsal — the balance is worthless, so the
+correct move is to run the procedure anyway and time it.
 
 ### Clearing a leaked secret from a Windows shell
 

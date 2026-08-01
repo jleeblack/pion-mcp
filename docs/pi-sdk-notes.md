@@ -157,8 +157,8 @@ payment record.
 
 | Address | Status | Notes |
 |---|---|---|
-| `GATQBZLI…CMLXBAIJA` | **intended current** (from 2026-07-31) | testnet, funded 100 Pi. **Not yet in use by Pi** — see below |
-| `GAXGSA34…QYWBUZWMT` | retired in the Portal, **still live in Pi's payment system** as of 2026-08-01 | seed deliberately exposed in an argv drill (see `runbook.md`); still funded 100 Pi |
+| `GATQBZLI…CMLXBAIJA` | **current** — confirmed live in Pi 2026-08-01 02:44 UTC | testnet, funded 100 Pi |
+| `GAXGSA34…QYWBUZWMT` | retired 2026-08-01 (Pi stopped using it at ~02:44 UTC) | seed deliberately exposed in an argv drill (see `runbook.md`); still holds 100 Pi, key is public — treat the balance as forfeit |
 | `GBFVD7J2…VM4IZUOB4` | retired 2026-07-31 | secret unrecoverable — screenshot truncated, passphrase lost; ~100.9 Test-Pi abandoned with it |
 
 Replacing a wallet is the recovery path when its secret is lost, because there
@@ -192,10 +192,24 @@ incomplete. And a wallet you believe is retired is still the live spending
 account, which turns "that key no longer matters" into a false assumption —
 sharply so when the reason it was retired is that its seed is public.
 
-Whether this resolves by propagation delay, by an explicit re-connect step in
-the Portal, or by something else is **unknown**. What is established is that the
-disagreement is possible, so a create-response check belongs in the pre-flight
-sequence permanently rather than only after a wallet swap.
+**It does resolve.** A re-probe at 02:44 UTC — 6 minutes 17 seconds after the
+one that returned the old wallet — came back with `from_address: GATQBZLI…`.
+So app wallets are **not** pinned: a swap does take effect, and a compromised
+app wallet can be replaced. That was the open worry and it is closed.
+
+What is *not* established is why it took six minutes. Propagation delay and an
+explicit re-connect in the Portal are both consistent with the observation, and
+they imply different instructions ("wait" versus "click this"). Unresolved —
+whoever next swaps a wallet should note whether they touched the Portal in
+between.
+
+The lasting consequence is the **window**. Between retiring a wallet and Pi
+actually ceasing to use it, the old wallet is still the live spending account.
+On testnet that is a curiosity. On mainnet, when the reason for the swap is a
+compromised key, that window is an emergency — see `runbook.md`.
+
+A create-response check therefore belongs in the pre-flight sequence
+permanently, not only after a swap.
 
 ## Developer Portal requirements
 
