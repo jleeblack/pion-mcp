@@ -11,9 +11,14 @@
  * argument, returned in a result, or logged.
  */
 
+import { z } from "zod";
+
 /** Stellar amounts carry 7 decimal places; 1 Pi = 10^7 stroops. */
 const STROOPS_PER_PI = 10_000_000n;
 const AMOUNT_PATTERN = /^\d+(\.\d{1,7})?$/;
+
+/** Stellar public key: 56 base32 characters beginning with G. */
+const STELLAR_ADDRESS = /^G[A-Z2-7]{55}$/;
 
 /** Stellar secret seed: 56 base32 characters beginning with S. */
 const SECRET_PATTERN = /^S[A-Z2-7]{55}$/;
@@ -40,6 +45,71 @@ export function toStroops(amount: string): bigint | null {
   const whole = dot === -1 ? amount : amount.slice(0, dot);
   const fraction = dot === -1 ? "" : amount.slice(dot + 1);
   return BigInt(whole) * STROOPS_PER_PI + BigInt(fraction.padEnd(7, "0"));
+}
+
+/**
+ * Runtime shape check for the create-payment fields `send_payment` depends on.
+ *
+ * Parsed rather than cast, on purpose. An earlier version of this codebase
+ * declared the recipient wallet as `recipient` — a name Pi never returns — and
+ * a cast turned that into `undefined` at runtime instead of a type error. Every
+ * A2U payment would have failed while building the transaction, stranding a
+ * record each time, with nothing in the failure to point at the cause.
+ *
+ * Deliberately narrow: it covers only the fields actually read, so an unrelated
+ * addition to Pi's response never blocks a payment, while a rename of something
+ * load-bearing stops it before anything is signed.
+ *
+ * Field names verified against a live response (`npm run probe:a2u`, 2026-07-31).
+ */
+export const createdPaymentSchema = z.object({
+  identifier: z.string().min(1),
+  /** The recipient's wallet. Present on create — no separate lookup needed. */
+  to_address: z.string().regex(STELLAR_ADDRESS, "is not a Stellar public key"),
+  /** Pi's record of the amount, to be cross-checked against what was asked. */
+  amount: z.number().finite(),
+  status: z.object({
+    developer_approved: z.boolean(),
+    cancelled: z.boolean(),
+  }),
+});
+
+export type CreatedPayment = z.infer<typeof createdPaymentSchema>;
+
+export type ParsedCreate =
+  | { ok: true; payment: CreatedPayment }
+  | { ok: false; issues: string; identifier: string | undefined };
+
+/**
+ * Validates a create-payment response.
+ *
+ * On failure it still digs the identifier out of the raw body if one is there:
+ * a record may exist even when the response cannot be understood, and a
+ * stranded payment with no id is far worse than one with an id.
+ */
+export function parseCreatedPayment(raw: unknown): ParsedCreate {
+  const parsed = createdPaymentSchema.safeParse(raw);
+  if (parsed.success) return { ok: true, payment: parsed.data };
+
+  const loose = (raw as { identifier?: unknown } | null | undefined)?.identifier;
+  return {
+    ok: false,
+    issues: parsed.error.issues
+      .map((i) => `${i.path.join(".") || "(root)"}: ${i.message}`)
+      .join("; "),
+    identifier: typeof loose === "string" && loose.length > 0 ? loose : undefined,
+  };
+}
+
+/**
+ * Converts Pi's recorded amount to stroops for comparison against the request.
+ *
+ * Never via `String(amount)`: Pi returns amounts as JSON numbers and small ones
+ * arrive in exponential notation — a real `1e-7` was observed — which does not
+ * match the decimal pattern `toStroops` expects.
+ */
+export function recordedAmountToStroops(amount: number): bigint {
+  return BigInt(Math.round(amount * Number(STROOPS_PER_PI)));
 }
 
 /**

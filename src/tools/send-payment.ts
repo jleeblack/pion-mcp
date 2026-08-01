@@ -3,7 +3,13 @@ import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 
 import { HORIZON_URL } from "../horizon.js";
 import { platformPostAsApp } from "../platform.js";
-import { toStroops, type PaymentsConfig } from "../payments.js";
+import {
+  parseCreatedPayment,
+  recordedAmountToStroops,
+  toStroops,
+  type CreatedPayment,
+  type PaymentsConfig,
+} from "../payments.js";
 import { ok } from "./common.js";
 import type { CallToolResult } from "@modelcontextprotocol/sdk/types.js";
 
@@ -13,27 +19,8 @@ const NETWORK_PASSPHRASE = "Pi Testnet";
 /** Stellar text memos are capped at 28 bytes. */
 const MAX_MEMO_BYTES = 28;
 
-/** Stellar public key: 56 chars, base32, leading G. */
-const STELLAR_ADDRESS = /^G[A-Z2-7]{55}$/;
-
 const TX_TIMEOUT_SECONDS = 180;
 
-/**
- * Subset of Pi's create-payment response that we actually use.
- *
- * Field names verified against a live `POST /v2/payments` response
- * (`npm run probe:a2u`, 2026-07-31). The recipient wallet is `to_address` — an
- * earlier version of this interface called it `recipient`, which no version of
- * the API ever returned. Nothing caught it, because the response is cast to
- * this type rather than parsed: a wrong name here is `undefined` at runtime,
- * not a type error.
- */
-interface PiPayment {
-  identifier: string;
-  /** The recipient's Stellar address. Present on create — no lookup needed. */
-  to_address: string;
-  amount: number;
-}
 
 /** Which irreversible step we reached, so a failure can say if funds moved. */
 type Stage = "create" | "submit" | "complete";
@@ -68,7 +55,10 @@ function strandedReport(
     lines.push(
       "A payment record was created with Pi, but the blockchain transaction was NOT submitted.",
       "No funds have left the wallet.",
-      `Stranded payment id: ${ctx.paymentId}`,
+      ctx.paymentId
+        ? `Stranded payment id: ${ctx.paymentId}`
+        : "The payment id could not be read from Pi's response. Find the record with " +
+          "`npm run incomplete` before retrying.",
       "",
       "Do NOT call send_payment again for this uid until the record above is cancelled —",
       "doing so would create a second payment for the same intent.",
@@ -184,9 +174,26 @@ export function registerSendPayment(server: McpServer, config: PaymentsConfig): 
 
       try {
         // ---- Step 1: create the payment record with Pi. Reversible. ----
-        const payment = await platformPostAsApp<PiPayment>("/v2/payments", config.serverApiKey, {
+        const raw = await platformPostAsApp<unknown>("/v2/payments", config.serverApiKey, {
           payment: { amount: Number(amount), memo, metadata: metadata ?? {}, uid },
         });
+
+        // A record may now exist even if we cannot read it. Recover the id from
+        // the raw body before reporting, so an unparseable response still leaves
+        // something to clean up with.
+        const parsed = parseCreatedPayment(raw);
+        if (!parsed.ok) {
+          paymentId = parsed.identifier;
+          return strandedReport(
+            "submit",
+            "Pi's create response did not match the shape send_payment depends on — " +
+              `${parsed.issues}. Nothing was signed.\n\nReceived: ` +
+              `${JSON.stringify(raw).slice(0, 800)}`,
+            { paymentId, amount, uid },
+          );
+        }
+
+        const payment: CreatedPayment = parsed.payment;
         paymentId = payment.identifier;
 
         // Pi matches the on-chain transaction by its memo. If the identifier
@@ -201,15 +208,32 @@ export function registerSendPayment(server: McpServer, config: PaymentsConfig): 
           );
         }
 
-        // Same reasoning for the destination. The response is cast, not parsed,
-        // so a missing or renamed field arrives as undefined and would blow up
-        // mid-build; checking here keeps the failure before anything is signed.
-        if (!STELLAR_ADDRESS.test(payment.to_address ?? "")) {
+        // Pi's record of the amount must match what we were asked to send —
+        // the on-chain transfer and Pi's record are two separate things, and
+        // signing while they disagree pays one number and records another.
+        //
+        // Compared in integer stroops, never by string: Pi returns amounts as
+        // JSON numbers and small ones arrive in exponential notation (a real
+        // 1e-7 was observed), so String(amount) does not round-trip.
+        const recordedStroops = recordedAmountToStroops(payment.amount);
+        if (recordedStroops !== requested) {
           return strandedReport(
             "submit",
-            `Pi's create response carried no usable recipient address ` +
-              `(to_address was ${JSON.stringify(payment.to_address)}), so the payment ` +
-              "cannot be built. Nothing was signed.",
+            `Pi recorded this payment as ${payment.amount} Pi, but ${amount} Pi was ` +
+              "requested. Refusing to sign a transfer that disagrees with Pi's record.",
+            { paymentId, amount, uid },
+          );
+        }
+
+        // Pi auto-approves A2U at create, so anything else is a state we do not
+        // understand — stop rather than sign into it.
+        if (payment.status.cancelled || !payment.status.developer_approved) {
+          return strandedReport(
+            "submit",
+            `Pi created this payment in an unexpected state (cancelled=` +
+              `${payment.status.cancelled}, developer_approved=` +
+              `${payment.status.developer_approved}). A2U is normally approved on ` +
+              "creation. Nothing was signed.",
             { paymentId, amount, uid },
           );
         }

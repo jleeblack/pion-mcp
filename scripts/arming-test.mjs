@@ -14,7 +14,12 @@ import { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import { StdioClientTransport } from "@modelcontextprotocol/sdk/client/stdio.js";
 import { Keypair } from "@stellar/stellar-sdk";
 
-import { checkPaymentsArming, toStroops } from "../dist/payments.js";
+import {
+  checkPaymentsArming,
+  parseCreatedPayment,
+  recordedAmountToStroops,
+  toStroops,
+} from "../dist/payments.js";
 
 // Generated fresh, never funded, never used. Valid shape, worthless.
 const THROWAWAY_SECRET = Keypair.random().secret();
@@ -122,6 +127,65 @@ check("7 decimal places accepted", () => assert.equal(toStroops("1.0000001"), 10
 check("8 decimal places rejected", () => assert.equal(toStroops("1.00000001"), null));
 check("negative rejected", () => assert.equal(toStroops("-1"), null));
 check("non-numeric rejected", () => assert.equal(toStroops("1e5"), null));
+
+console.log("\nCreate-response parsing — the fields send_payment depends on:");
+
+/** A real create response, trimmed to the fields we read (probe, 2026-07-31). */
+const LIVE_CREATE = {
+  identifier: "tG76m134ce43WkPasVL8nCWLUomS",
+  to_address: "GBZIHFFWHGPM7WJOGAECQNWGGA4NSRX3HWFW4X2TRN3TWF5HZDHX5GPX",
+  amount: 1e-7,
+  status: { developer_approved: true, cancelled: false },
+};
+
+check("accepts a real create response", () => {
+  const r = parseCreatedPayment(LIVE_CREATE);
+  assert.equal(r.ok, true);
+  assert.equal(r.payment.to_address, LIVE_CREATE.to_address);
+});
+
+check("tolerates unknown fields Pi may add", () =>
+  assert.equal(parseCreatedPayment({ ...LIVE_CREATE, some_new_field: 1 }).ok, true),
+);
+
+// The regression that motivated all of this: the recipient wallet under the
+// name an earlier version of the code guessed. A cast accepted it silently.
+check("rejects the old `recipient` field name", () => {
+  const { to_address, ...rest } = LIVE_CREATE;
+  const r = parseCreatedPayment({ ...rest, recipient: to_address });
+  assert.equal(r.ok, false);
+  assert.match(r.issues, /to_address/);
+});
+
+check("rejects a malformed wallet address", () =>
+  assert.equal(parseCreatedPayment({ ...LIVE_CREATE, to_address: "not-a-key" }).ok, false),
+);
+
+check("recovers the payment id even when the shape is wrong", () => {
+  const r = parseCreatedPayment({ identifier: "abc123", garbage: true });
+  assert.equal(r.ok, false);
+  assert.equal(r.identifier, "abc123");
+});
+
+check("reports no id when the body carries none", () =>
+  assert.equal(parseCreatedPayment({ garbage: true }).identifier, undefined),
+);
+
+check("survives a null or non-object body", () => {
+  assert.equal(parseCreatedPayment(null).ok, false);
+  assert.equal(parseCreatedPayment("nope").ok, false);
+});
+
+// Pi returns amounts as JSON numbers, and small ones in exponential notation.
+check("exponential amounts convert to exact stroops", () => {
+  assert.equal(recordedAmountToStroops(1e-7), 1n);
+  assert.equal(recordedAmountToStroops(0.314), 3_140_000n);
+  assert.equal(recordedAmountToStroops(0.1) + recordedAmountToStroops(0.2), toStroops("0.3"));
+});
+
+check("a recorded amount that disagrees with the request is detectable", () =>
+  assert.notEqual(recordedAmountToStroops(1.0), toStroops("0.001")),
+);
 
 console.log("\nTool exposure:");
 
