@@ -369,6 +369,29 @@ check — and the second one is actionable.
   the derivation question above*. Env var overwritten in-session. No app wallet
   or server key was involved.
 
+### Arming validates the money network, deliberately not the Platform API
+
+`checkPaymentsArming` refuses any `PION_HORIZON_URL` without `testnet` in it.
+It does **not** validate `PION_PLATFORM_URL`, which can point anywhere while
+payments are armed.
+
+That asymmetry is a decision, not an oversight. Horizon is where irreversible
+value moves, and Pi restricts A2U to testnet, so the guard enforces the
+platform's own restriction at the only place a mistake spends real money. The
+Platform API is coordination and bookkeeping — redirecting it cannot by itself
+move funds, because funds move through a signed Stellar transaction the
+Platform API never touches.
+
+Stated adversarially: anyone with environment control can redirect the Platform
+API while armed. That is not an escalation. Environment control is already
+total control — the same person sets `PI_WALLET_SECRET` and could simply sign
+whatever they like. A guard there would stop nothing and imply a boundary that
+does not exist.
+
+The practical upside is that fault injection at the Platform API needs no code
+changes, which is what makes the stranded-payment drill possible: a local
+pass-through proxy breaks one route while the shipped code path runs untouched.
+
 ### If a send fails anyway
 
 `send_payment` reports which step it reached, and that determines what to do:

@@ -44,7 +44,10 @@
     "wallet": "node scripts/app-wallet.mjs",
     "signin": "node scripts/pi-signin.mjs",
     "prepack": "npm run clean && tsc --sourceMap false",
-    "send": "node scripts/send.mjs"
+    "send": "node scripts/send.mjs",
+    "get-payment": "node scripts/get-payment.mjs",
+    "cancel": "node scripts/cancel.mjs",
+    "complete": "node scripts/complete.mjs"
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.30.0",
