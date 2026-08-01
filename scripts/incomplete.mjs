@@ -68,10 +68,15 @@ if (!res.ok) {
     console.log(`⚠ ${payments.length} incomplete server payment(s):\n`);
     console.log(JSON.stringify(payments, null, 2));
     console.log(
-      "\nResolve each before sending again. A record with a transaction can be\n" +
-        "completed (POST /v2/payments/{id}/complete with its txid); one without\n" +
-        "was never submitted on-chain and should be cancelled\n" +
-        "(POST /v2/payments/{id}/cancel).",
+      "\nResolve each before sending again.\n\n" +
+        "A record showing `transaction: null` does NOT mean nothing was sent. Pi\n" +
+        "learns the txid only when /complete succeeds, so a payment whose transfer\n" +
+        "landed but was never reported looks identical to one that never happened\n" +
+        "(observed, drill B). Cancelling the first loses funds the recipient\n" +
+        "already has.\n\n" +
+        "Use `npm run cancel <id>`, which searches the chain for a transaction\n" +
+        "carrying the payment id as its memo and refuses if it finds one. Do not\n" +
+        "cancel straight through the API on the strength of this listing alone.",
     );
   }
 }

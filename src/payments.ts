@@ -83,6 +83,14 @@ export const createdPaymentSchema = z.object({
   identifier: z.string().min(1),
   /** The recipient's wallet. Present on create — no separate lookup needed. */
   to_address: z.string().regex(STELLAR_ADDRESS, "is not a Stellar public key"),
+  /**
+   * The wallet Pi expects to send from — the app wallet *selected* in the
+   * Developer Portal, which is not necessarily the one `PI_WALLET_SECRET`
+   * unlocks. Observed 2026-08-01: Pi returns the selected wallet here
+   * regardless of what key the app actually holds, so this is the only place
+   * the two can be compared before signing.
+   */
+  from_address: z.string().regex(STELLAR_ADDRESS, "is not a Stellar public key"),
   /** Pi's record of the amount, to be cross-checked against what was asked. */
   amount: z.number().finite(),
   status: z.object({

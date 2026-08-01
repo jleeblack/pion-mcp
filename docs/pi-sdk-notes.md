@@ -121,6 +121,32 @@ Whether Pi's own wallet UI displays `memo` or `metadata` to the recipient is
 likely candidate. Do not put anything in either field that would embarrass you
 if shown to the user.
 
+### A payment record cannot tell you whether funds moved (observed 2026-08-01)
+
+**Pi learns a transaction's id only when `/complete` succeeds.** Until then the
+record carries `transaction: null` and `transaction_verified: false` — and it
+carries exactly that whether the transfer never happened or already landed.
+
+Demonstrated by inducing both states deliberately (`runbook.md`, stranded
+drill). A payment created but never submitted, and a payment whose transfer was
+confirmed on-chain but whose `/complete` call was intercepted, produced
+identical records.
+
+Consequences for anything built on this API:
+
+- `incomplete_server_payments` lists both, indistinguishably. **A listing is not
+  a statement that nothing was sent.**
+- Cancelling on the strength of `transaction: null` can cancel a payment the
+  recipient has already received. Nothing in Pi's data prevents this, and the
+  documentation does not warn about it.
+- The only authority is the chain. The payment identifier is the on-chain
+  Stellar text memo, so the transaction is findable: search the sending wallet's
+  transactions for a successful one whose memo equals the identifier.
+
+This is the strongest argument encountered for the memo design carrying the
+identifier rather than anything else. It is what makes an orphaned transfer
+recoverable at all.
+
 ### `POST /v2/payments` response shape (observed 2026-07-31)
 
 From a live A2U create. Field names here are load-bearing and several are not

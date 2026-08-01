@@ -157,6 +157,7 @@ console.log("\nCreate-response parsing — the fields send_payment depends on:")
 const LIVE_CREATE = {
   identifier: "tG76m134ce43WkPasVL8nCWLUomS",
   to_address: "GA2LCCTQOYPQEK4NTKJMF7KG6PDPPTVGCM5IUFU7VMMK2RG445WJK5GE",
+  from_address: "GBRXHUGQMPCPDZY7YQSHXWMHK6QIBTUKPMNKPSAF7HB4VYPHU7Z5VJVJ",
   amount: 1e-7,
   status: { developer_approved: true, cancelled: false },
 };
@@ -183,6 +184,16 @@ check("rejects the old `recipient` field name", () => {
 check("rejects a malformed wallet address", () =>
   assert.equal(parseCreatedPayment({ ...LIVE_CREATE, to_address: "not-a-key" }).ok, false),
 );
+
+// from_address is the wallet Pi SELECTED, which need not be the one our secret
+// unlocks. send_payment compares the two before signing; the parse has to
+// surface the field for that comparison to be possible at all.
+check("requires from_address — the sender Pi expects", () => {
+  const { from_address, ...rest } = LIVE_CREATE;
+  const r = parseCreatedPayment(rest);
+  assert.equal(r.ok, false);
+  assert.match(r.issues, /from_address/);
+});
 
 check("recovers the payment id even when the shape is wrong", () => {
   const r = parseCreatedPayment({ identifier: "abc123", garbage: true });

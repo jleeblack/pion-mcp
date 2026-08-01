@@ -243,10 +243,43 @@ export function registerSendPayment(server: McpServer, config: PaymentsConfig): 
           );
         }
 
+        // Pi will only match a transaction sent from the wallet it selected.
+        // Signing with a different key produces a transfer Pi cannot verify:
+        // funds leave and the payment stays incomplete. The two are genuinely
+        // independent — Pi reports its selected wallet here whatever key we
+        // hold — so this is the one place the mismatch is catchable, and it is
+        // catchable only before signing.
+        if (payment.from_address !== keypair.publicKey()) {
+          return strandedReport(
+            "submit",
+            `Pi expects this payment to be sent from ${payment.from_address}, but ` +
+              `PI_WALLET_SECRET unlocks ${keypair.publicKey()}. Signing with the wrong ` +
+              "wallet would move funds Pi could not match to this payment. Nothing was " +
+              "signed. Select the right app wallet in the Developer Portal, or load the " +
+              "secret for the wallet already selected.",
+            { paymentId, amount, uid },
+          );
+        }
+
         // ---- Step 2: sign and submit on-chain. Irreversible. ----
         stage = "submit";
         const horizon = new Horizon.Server(HORIZON_URL);
-        const account = await horizon.loadAccount(keypair.publicKey());
+
+        let account;
+        try {
+          account = await horizon.loadAccount(keypair.publicKey());
+        } catch {
+          // Horizon says "Not Found" here, which names neither the account nor
+          // the reason. On Stellar an account exists only once funded, so this
+          // is nearly always an unfunded app wallet.
+          return strandedReport(
+            "submit",
+            `the app wallet ${keypair.publicKey()} does not exist on ${HORIZON_URL}. ` +
+              "A Stellar account only exists once it has been funded, and an unfunded " +
+              "account cannot send. Fund it and retry. Nothing was signed.",
+            { paymentId, amount, uid },
+          );
+        }
         const baseFee = await horizon.fetchBaseFee();
 
         const tx = new TransactionBuilder(account, {

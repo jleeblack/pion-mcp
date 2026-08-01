@@ -336,6 +336,44 @@ check — and the second one is actionable.
 
 ### Recorded events
 
+- **2026-08-01 — stranded-payment drill (A: submit stage, B: complete stage).
+  Deliberate; found a defect that would have lost funds.**
+
+  Both untested branches of `strandedReport` were induced on testnet. **A**
+  armed with a freshly generated, never-funded seed, so create succeeded and
+  `loadAccount` 404'd — a record with no transaction, structurally incapable of
+  spending. **B** routed `PION_PLATFORM_URL` through a local proxy that answered
+  `POST /complete` with 503 and never forwarded it, so the transfer landed
+  on-chain while Pi was genuinely never told. Neither drill modified Pion; the
+  faults were injected outside it, so the shipped code path ran untouched.
+
+  Both reports were accurate about the funds position, carried the identifiers
+  needed to recover, and leaked no credential. Both strands appeared in
+  `incomplete_server_payments` immediately — **the first evidence that gate 1
+  can detect anything at all**, since every prior run had returned empty. Both
+  recovered cleanly (A cancelled, B completed with its txid) and the list
+  returned to empty, so drills leave no permanent artifact.
+
+  **The finding: Pi's record cannot distinguish "never submitted" from
+  "submitted but unreported."** Both drills produced `transaction: null` and
+  `transaction_verified: false` — byte-identical states, one safe to cancel and
+  one where the recipient had already been paid. Pi learns a txid only when
+  `/complete` succeeds, so a payment it was never told about looks exactly like
+  one that never happened. Two things followed that guidance to the wrong
+  conclusion: `incomplete.mjs` printed *"one without a transaction was never
+  submitted and should be cancelled"*, and `cancel.mjs` guarded on
+  `payment.transaction?.txid` — a field that is null in precisely the dangerous
+  case. Following either would have converted a recoverable strand into a
+  silent loss.
+
+  Fixed by asking the chain instead. The payment identifier rides on-chain as
+  the Stellar text memo, so `cancel` now searches the sending wallet's
+  transactions for that memo and refuses if it finds one. It also refuses on a
+  record younger than five minutes (Horizon ingestion lag could otherwise report
+  a false "nothing on-chain") and on any inconclusive search, because an
+  unnecessary refusal leaves a record listed while a wrong cancel loses money.
+  Verified against both drill records: B's is found, A's is not.
+
 - **2026-07-31 — argv exposure drill. Deliberate; produced a control.**
   A testnet app wallet seed was intentionally pasted onto a `probe:a2u` command
   line, concatenated onto the uid, to exercise the failure mode while the stakes
@@ -399,7 +437,7 @@ pass-through proxy breaks one route while the shipped code path runs untouched.
 | Step | What happened | Action |
 |---|---|---|
 | `create` | No record, no funds moved | Safe to retry |
-| `submit` | Record created, nothing signed | Cancel the stranded id before retrying — never retry blind, it creates a second payment for the same intent |
+| `submit` | Record created, nothing signed | `npm run cancel <id>` before retrying — never retry blind, it creates a second payment for the same intent. Cancel only via that script: it checks the chain first, and Pi's record alone cannot tell this case from the one below |
 | `complete` | **Funds have left the wallet**, Pi not notified | Do NOT retry. Complete manually via `POST /v2/payments/{id}/complete` with the txid |
 
 A `submit`-stage failure with no payment id in the message means the response

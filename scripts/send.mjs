@@ -30,7 +30,14 @@ refuseSecretsInArgv();
 
 const args = process.argv.slice(2);
 const confirmed = args.includes("--confirm");
-const [uid, amount] = args.filter((a) => !a.startsWith("--"));
+
+// The memo is Pi-record text, not the on-chain memo (that slot carries the
+// payment identifier). Parameterised rather than hardcoded so a drill labels
+// its own artifacts — anything that outlives cleanup should say what made it.
+const memoAt = args.indexOf("--memo");
+const memo = memoAt !== -1 ? args[memoAt + 1] : "Pion A2U send";
+const positional = args.filter((a, i) => !a.startsWith("--") && i !== memoAt + 1);
+const [uid, amount] = positional;
 
 if (!uid || !amount) {
   console.error("Usage: node scripts/send.mjs <uid> <amount> --confirm\n");
@@ -45,6 +52,7 @@ console.log("About to send:\n");
 console.log(`  amount   ${amount} Pi`);
 console.log(`  to uid   ${uid}`);
 console.log(`  horizon  ${HORIZON}`);
+console.log(`  memo     ${JSON.stringify(memo)}`);
 console.log(`  cap      ${process.env.PION_MAX_PAYMENT_PI ?? "(unset — server will refuse)"}`);
 console.log("");
 
@@ -80,7 +88,7 @@ if (!tools.some((t) => t.name === "send_payment")) {
 
 const result = await client.callTool({
   name: "send_payment",
-  arguments: { uid, amount, memo: "Pion A2U first live send" },
+  arguments: { uid, amount, memo },
 });
 
 console.log("=".repeat(60));
