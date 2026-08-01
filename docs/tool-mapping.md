@@ -265,6 +265,12 @@ and wallet secret genuinely are server-owned.
 - Horizon's `/accounts/{id}/payments` returns more than classic payments on Pi
   testnet — Soroban `invoke_host_function` records appear in the same feed, and
   they carry no asset fields. Do not assume every record is a native transfer.
+  **Observed live 2026-08-01:** a routine `npm run smoke` happened to draw an
+  account whose three most recent records were all `invoke_host_function`, and
+  `get_account_payments` returned them typed, with no asset fields invented.
+  The gotcha was originally recorded from reading the feed during the Tier A
+  build; this is the first time it appeared unprompted in the wild, with the
+  tool handling it as designed.
 - Horizon always emits a `_links.next` cursor, even past the end of a result
   set, so its presence is not a "more results" signal.
 - `GET /v2/me` returns **401 with an empty body** — no JSON error document.
