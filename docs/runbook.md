@@ -142,8 +142,18 @@ $env:PI_WALLET_SECRET =
   [Runtime.InteropServices.Marshal]::PtrToStringAuto(
     [Runtime.InteropServices.Marshal]::SecureStringToBSTR($s))
 $env:PI_WALLET_SECRET.Length                        # expect 56
-npm run wallet <app-wallet-address>
+npm run wallet GAXGSA3464LANSVET73TXYDWDCLFLSW26HAG3XZVD2CCQA5QYWBUZWMT
 ```
+
+**Current app wallet: `GAXGSA3464LANSVET73TXYDWDCLFLSW26HAG3XZVD2CCQA5QYWBUZWMT`**
+(replaced 2026-07-31; the previous one is retired — see `pi-sdk-notes.md`).
+
+That check proves the secret matches the address you typed. It does **not**
+prove Pi agrees this is the app wallet — for that, the address has to come from
+Pi rather than from you. `npm run probe:a2u <uid>` prints `from_address` on the
+create response, which is Pi's own answer. After replacing a wallet, run it
+once and confirm `from_address` is the address above; the probe cancels its own
+record, so this costs nothing.
 
 Session-scoped in your terminal only. Never in Netlify, never in a file, never
 committed. The secret is never printed by any script here; the derived public

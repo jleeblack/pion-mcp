@@ -130,10 +130,17 @@ check("non-numeric rejected", () => assert.equal(toStroops("1e5"), null));
 
 console.log("\nCreate-response parsing — the fields send_payment depends on:");
 
-/** A real create response, trimmed to the fields we read (probe, 2026-07-31). */
+/**
+ * A real create response, trimmed to the fields we read (probe, 2026-07-31).
+ *
+ * The identifier is the genuine one — its 28-byte length is the point of the
+ * memo tests. The address is a freshly generated throwaway: the shape is what
+ * matters here, and this repo is public, so a real person's wallet does not
+ * belong in a fixture (same reasoning that keeps uids out — see tool-mapping).
+ */
 const LIVE_CREATE = {
   identifier: "tG76m134ce43WkPasVL8nCWLUomS",
-  to_address: "GBZIHFFWHGPM7WJOGAECQNWGGA4NSRX3HWFW4X2TRN3TWF5HZDHX5GPX",
+  to_address: "GA2LCCTQOYPQEK4NTKJMF7KG6PDPPTVGCM5IUFU7VMMK2RG445WJK5GE",
   amount: 1e-7,
   status: { developer_approved: true, cancelled: false },
 };

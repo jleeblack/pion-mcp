@@ -149,6 +149,28 @@ Pi-Browser frontend hands it the paymentId.
 
 ---
 
+## App wallet history
+
+The app wallet is the A2U sender: Pi records it as `from_address` on every
+create, and a transaction signed by any other key cannot be matched to the
+payment record.
+
+| Address | Status | Notes |
+|---|---|---|
+| `GAXGSA34…QYWBUZWMT` | **current** (from 2026-07-31) | testnet |
+| `GBFVD7J2…VM4IZUOB4` | retired 2026-07-31 | secret unrecoverable — screenshot truncated, passphrase lost; ~100.9 Test-Pi abandoned with it |
+
+Replacing a wallet is the recovery path when its secret is lost, because there
+is no reset: a Stellar seed cannot be changed, only replaced. On testnet the
+cost is the abandoned balance, which is worthless by definition. **On mainnet
+the same loss is permanent and real** — which is the argument for capturing the
+app wallet secret into a password manager at creation, in full, rather than
+from a screenshot.
+
+Nothing in this repo hardcodes the app wallet address; it is supplied per-run
+to `npm run wallet` and recorded in `runbook.md`. Verified by grep at the time
+of the swap, and worth re-checking if that ever changes.
+
 ## Developer Portal requirements
 
 - Register at `develop.pi` inside the Pi Browser
