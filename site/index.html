@@ -181,7 +181,7 @@
 <div class="page">
 
   <div class="masthead">
-    <span>pion-mcp · v0.1 · Pi Testnet</span>
+    <span>pion-mcp · v0.3 · Pi Testnet</span>
     <span><a href="https://github.com/jleeblack/pion-mcp">github</a> · <a href="https://www.npmjs.com/package/pion-mcp">npm</a></span>
   </div>
 
@@ -195,10 +195,12 @@
     <span class="label">Abstract</span>
     <p>
       Pion connects AI agents — Claude, Cursor, and any MCP-compatible client — to the
-      Pi Network blockchain. Version 0.1 exposes read-only tools for wallet balances,
-      payment history, and transaction verification against public testnet infrastructure:
-      no API keys, no wallet secrets, nothing that can move value. It is the first step
-      toward agents that can transact on Pi safely, with humans holding the leash.
+      Pi Network blockchain. Out of the box it exposes read-only tools for wallet
+      balances, payment history, transaction verification, and identity: no API keys,
+      no wallet secrets, nothing that can move value. App-to-User payments exist behind
+      a four-condition arming gate, verified end to end on testnet and deliberately off
+      by default. It is a step toward agents that can transact on Pi safely, with humans
+      holding the leash.
     </p>
   </div>
 
@@ -220,8 +222,9 @@
   <section>
     <h2><span class="no">1.</span>Tools</h2>
     <p>
-      Every v0.1 tool is a read against Pi's public Horizon API. An agent can look,
-      verify, and reason about on-chain state — it cannot spend, sign, or hold anything.
+      A default install can look, verify, and reason about on-chain state — it cannot
+      spend, sign, or hold anything. The spend tool is not merely disabled when
+      unarmed: it is never registered, so an agent cannot see that the capability exists.
     </p>
     <table>
       <thead><tr><th>Tool</th><th>What the agent gets</th></tr></thead>
@@ -229,8 +232,17 @@
         <tr><td><code>get_wallet_balance</code></td><td>Pi and token balances for any wallet address</td></tr>
         <tr><td><code>get_account_payments</code></td><td>Payment history for an account</td></tr>
         <tr><td><code>query_transaction</code></td><td>Details and verification of a specific transaction</td></tr>
+        <tr><td><code>verify_user</code></td><td>Validates a Pi access token, returning uid and username</td></tr>
+        <tr><td><code>send_payment</code></td><td>App-to-User payment — <b>off unless armed</b>, testnet only</td></tr>
       </tbody>
     </table>
+    <p>
+      Arming <code>send_payment</code> takes four separate acts: an explicit switch, a
+      mandatory per-payment ceiling, both credentials, and a testnet Horizon URL.
+      Holding the credentials is deliberately not sufficient. The realistic failure mode
+      is not a stolen key — it is an agent talked into spending by instructions sitting
+      in data it just read, and the ceiling is what makes that bounded rather than fatal.
+    </p>
   </section>
 
   <section>
@@ -253,11 +265,26 @@
   <section>
     <h2><span class="no">3.</span>Status</h2>
     <ul class="roadmap">
-      <li class="done">Name, package, and domain claimed; SDK surface mapped</li>
-      <li class="now">v0.1 — read-only Horizon tools on Pi Testnet</li>
-      <li class="next">v0.2 — App-to-User payments (testnet), payment status and recovery tools</li>
+      <li class="done">v0.1 — read-only Horizon tools, verified against live testnet</li>
+      <li class="done">v0.2 — <code>verify_user</code> identity checks via the Platform API</li>
+      <li class="done">v0.3 — App-to-User payments proven end to end on testnet: created,
+        signed, submitted, and confirmed on-chain independently of the tool's own report</li>
+      <li class="now">Hardening <code>send_payment</code> before recommending it to anyone
+        else — its failure paths were exercised deliberately, and the drill found a
+        defect that would have lost funds</li>
+      <li class="next">The rest of Tier C as MCP tools: payment status, incomplete-payment
+        recovery, and the User-to-App backend half</li>
       <li class="next">Later — agent allowance delegation: humans authorize, agents spend within bounds</li>
     </ul>
+    <p>
+      <code>send_payment</code> is honestly experimental. The success path is verified;
+      so are the two stranded-payment branches, which were induced on purpose rather
+      than waited for. What that exercise found — that a Pi payment record cannot
+      distinguish "never sent" from "sent but unreported" — is written up with the
+      primary evidence in
+      <a href="https://github.com/jleeblack/pion-mcp/blob/main/docs/FINDINGS.md">FINDINGS.md</a>,
+      alongside three other undocumented behaviours the build turned up.
+    </p>
   </section>
 
   <section>
