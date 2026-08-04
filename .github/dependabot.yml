@@ -1,0 +1,31 @@
+version: 2
+
+updates:
+  - package-ecosystem: "npm"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+    open-pull-requests-limit: 5
+
+    # `allow` is deliberately omitted. Dependabot version updates already
+    # default to direct dependencies only — the packages explicitly listed in
+    # package.json. Transitive packages are touched only when a direct bump
+    # requires it.
+    #
+    # Do NOT add `allow: [{dependency-type: "direct"}]` here. The `allow`
+    # option filters security updates as well as version updates, and every
+    # advisory this repo has seen so far has been against a transitive
+    # package resolved through @modelcontextprotocol/sdk (hono, fast-uri).
+    # An explicit direct-only rule risks suppressing exactly those alerts.
+
+    # Version updates only (groups default to applies-to: version-updates),
+    # so security updates still arrive as individual, immediately actionable
+    # pull requests.
+    groups:
+      production:
+        dependency-type: "production"
+        update-types: ["minor", "patch"]
+      development:
+        dependency-type: "development"
+        update-types: ["minor", "patch"]
