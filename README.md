@@ -200,4 +200,17 @@ The rest of Tier C: `get_payment_status`, `list_incomplete_payments`,
 and the recovery tooling for stranded payments. See
 [`docs/tool-mapping.md`](https://github.com/jleeblack/pion-mcp/blob/main/docs/tool-mapping.md).
 
+## Legal
+
+The code is Apache-2.0; see [`LICENSE`](LICENSE). The website and the hosted U2A
+endpoints are covered separately by the
+[Privacy Policy](https://pionmcp.com/privacy) and
+[Terms of Service](https://pionmcp.com/terms) — sources in
+[`site/privacy.html`](site/privacy.html) and [`site/terms.html`](site/terms.html).
+Where the two disagree about the software itself, the Apache licence wins.
+
+Short version: the MCP server has no telemetry and talks only to Pi's public
+endpoints, the site sets no cookies and runs no analytics, and nothing here is
+stored in a database — there isn't one.
+
 *Unofficial community project — not affiliated with Pi Network.*

@@ -14,3 +14,17 @@
 # import and bundles it into each function.
 [functions]
   node_bundler = "esbuild"
+
+# Extensionless URLs for the two legal pages. Netlify's pretty-URL handling would
+# usually serve these anyway, but the Pi Developer Portal wants a stable link it
+# can store, and these are the URLs registered there — so they are pinned here
+# rather than left to a default that could be turned off in the UI.
+[[redirects]]
+  from = "/privacy"
+  to = "/privacy.html"
+  status = 200
+
+[[redirects]]
+  from = "/terms"
+  to = "/terms.html"
+  status = 200

@@ -1,0 +1,491 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Terms of Service — Pion</title>
+<meta name="description" content="Terms of service for Pion, an unofficial Model Context Protocol server for Pi Network, and for the pionmcp.com website.">
+<meta property="og:title" content="Terms of Service — Pion">
+<meta property="og:description" content="The terms under which Pion and pionmcp.com are provided. Experimental software, testnet only, no warranty.">
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://pionmcp.com/terms">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=STIX+Two+Text:ital,wght@0,400;0,600;0,700;1,400&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --paper:#FAFAF6;
+    --ink:#1B1B22;
+    --accent:#6B3FA0;   /* Pi violet */
+    --muted:#67676F;
+    --rule:#D8D6CC;
+    --code-bg:#F1EFE8;
+    --track:#B0762A;
+  }
+  *{margin:0;padding:0;box-sizing:border-box}
+  html{scroll-behavior:smooth}
+  body{
+    background:var(--paper);
+    color:var(--ink);
+    font-family:"STIX Two Text",Georgia,serif;
+    font-size:1.0625rem;
+    line-height:1.65;
+  }
+  .page{max-width:44rem;margin:0 auto;padding:3.5rem 1.5rem 5rem}
+
+  .masthead{
+    font-family:"IBM Plex Mono",monospace;
+    font-size:.75rem;
+    letter-spacing:.04em;
+    color:var(--muted);
+    display:flex;justify-content:space-between;gap:1rem;flex-wrap:wrap;
+    border-bottom:1px solid var(--rule);
+    padding-bottom:.9rem;
+  }
+  .masthead a{color:var(--muted)}
+
+  .titleblock{text-align:center;margin:3.2rem 0 2.6rem}
+  h1{
+    font-size:clamp(2rem,5.5vw,2.7rem);
+    font-weight:700;
+    letter-spacing:-.01em;
+    line-height:1.15;
+  }
+  .dates{
+    font-family:"IBM Plex Mono",monospace;
+    font-size:.78rem;color:var(--muted);
+    margin-top:1.1rem;letter-spacing:.03em;
+  }
+
+  .abstract{
+    border-top:1px solid var(--ink);
+    border-bottom:1px solid var(--ink);
+    padding:1.35rem 1.6rem;
+    margin:0 auto 3rem;
+  }
+  .abstract .label{
+    font-family:"IBM Plex Mono",monospace;
+    font-size:.72rem;letter-spacing:.18em;text-transform:uppercase;
+    color:var(--accent);
+    display:block;margin-bottom:.55rem;
+  }
+  .abstract p{font-size:1rem}
+  .abstract p + p{margin-top:.8rem}
+
+  section{margin:2.8rem 0}
+  h2{font-size:1.28rem;font-weight:700;margin-bottom:1rem}
+  h2 .no{color:var(--accent);margin-right:.55rem}
+  h3{
+    font-family:"IBM Plex Mono",monospace;
+    font-size:.8rem;letter-spacing:.1em;text-transform:uppercase;
+    color:var(--muted);font-weight:500;
+    margin:1.7rem 0 .6rem;
+  }
+  p + p{margin-top:.9rem}
+  a{color:var(--accent);text-decoration-thickness:1px;text-underline-offset:2.5px}
+  a:hover{text-decoration-thickness:2px}
+  a:focus-visible{outline:2px solid var(--accent);outline-offset:2px;border-radius:2px}
+
+  ul{margin:.9rem 0 0 0;list-style:none}
+  ul li{padding:.3rem 0 .3rem 1.4rem;position:relative}
+  ul li::before{
+    content:"—";position:absolute;left:0;top:.3rem;
+    color:var(--muted);font-size:.9rem;
+  }
+  li + li{margin-top:.1rem}
+
+  code{
+    font-family:"IBM Plex Mono",monospace;
+    font-size:.86em;
+    background:var(--code-bg);
+    padding:.1em .35em;border-radius:3px;
+  }
+
+  .callout{
+    border-left:2px solid var(--track);
+    padding:.15rem 0 .15rem 1.1rem;
+    margin-top:1.1rem;
+  }
+  .caps{
+    font-size:.95rem;
+    background:var(--code-bg);
+    border:1px solid var(--rule);
+    border-radius:6px;
+    padding:1rem 1.15rem;
+    margin-top:1.1rem;
+  }
+  .caps p + p{margin-top:.75rem}
+
+  footer{
+    margin-top:4rem;padding-top:1.1rem;
+    border-top:1px solid var(--rule);
+    font-size:.84rem;color:var(--muted);
+    display:flex;justify-content:space-between;gap:1rem;flex-wrap:wrap;
+  }
+  footer a{color:var(--muted)}
+</style>
+</head>
+<body>
+<div class="page">
+
+  <div class="masthead">
+    <span><a href="/">pion-mcp</a> · terms of service</span>
+    <span><a href="/privacy">privacy</a> · <a href="https://github.com/jleeblack/pion-mcp">github</a></span>
+  </div>
+
+  <div class="titleblock">
+    <h1>Terms of Service</h1>
+    <p class="dates">Effective 3 August 2026 · Last updated 3 August 2026</p>
+  </div>
+
+  <div class="abstract">
+    <span class="label">Summary</span>
+    <p>
+      Pion is free, unofficial, experimental software provided as-is with no
+      warranty. It is not affiliated with Pi Network. It targets Pi Testnet, where
+      the currency has no monetary value. You are responsible for your own
+      credentials, your own agent, and anything you choose to send.
+    </p>
+    <p>
+      This summary is for orientation only and is not part of the agreement. The
+      numbered sections below are.
+    </p>
+  </div>
+
+  <section>
+    <h2><span class="no">1.</span>Agreement</h2>
+    <p>
+      These Terms of Service (“Terms”) are a binding agreement between you (“you”)
+      and Justin Black, an individual operating the Pion project in the State of
+      Texas, USA (“we”, “us”, “Pion”). They govern your use of the pionmcp.com
+      website, the <code>pion-mcp</code> software package, and any endpoint or
+      service we make available (together, the “Service”).
+    </p>
+    <p>
+      By using the Service you accept these Terms. If you do not accept them, do
+      not use the Service. If you are using the Service for an organisation, you
+      represent that you have authority to bind that organisation.
+    </p>
+    <p>You must be at least 13 years old, and old enough to form a binding contract where you live, to use the Service.</p>
+  </section>
+
+  <section>
+    <h2><span class="no">2.</span>No affiliation with Pi Network</h2>
+    <p>
+      Pion is an independent, unofficial, open-source community project. It is
+      <strong>not affiliated with, sponsored by, endorsed by, or in any way
+      officially connected to Pi Network, the Pi Community Company, SocialChain,
+      or any of their subsidiaries or affiliates.</strong> The names “Pi”, “Pi
+      Network”, and related marks belong to their respective owners and are used
+      here only descriptively, to say what Pion interoperates with.
+    </p>
+    <p>
+      Your use of Pi Network itself — the Pi app, the Pi Browser, the Developer
+      Portal, and the Pi blockchain — is governed by Pi Network's own terms and
+      policies, not by these Terms. Nothing here grants you any right in relation
+      to Pi Network, and we make no promises on Pi Network's behalf.
+    </p>
+  </section>
+
+  <section>
+    <h2><span class="no">3.</span>What the Service is</h2>
+    <p>
+      Pion is a Model Context Protocol server that lets an AI agent read data from
+      the Pi Network blockchain. In its default configuration it exposes read-only
+      tools — wallet balances, payment history, transaction lookup, and access-token
+      verification — and holds no keys and no funds.
+    </p>
+    <p>
+      Pion is a <em>tool</em>. It is not a wallet, an exchange, a custodian, a
+      broker, a money transmitter, or a financial institution. We never take
+      custody of your Pi, your tokens, your keys, or your funds, and we have no
+      ability to move, freeze, or recover them.
+    </p>
+    <p>
+      Nothing in the Service or its documentation is financial, investment, tax,
+      accounting, or legal advice. Do your own research and take your own professional advice.
+    </p>
+  </section>
+
+  <section>
+    <h2><span class="no">4.</span>Experimental software and testnet</h2>
+
+    <h3>Pre-release status</h3>
+    <p>
+      Pion is pre-1.0 software under active development. Interfaces, tool names,
+      behaviour, and availability may change or break without notice. Bugs are
+      expected. Do not build anything you cannot afford to have break.
+    </p>
+
+    <h3>Testnet</h3>
+    <p>
+      The Service targets Pi Testnet. Test-Pi has no monetary value, is not
+      convertible to Pi or to any fiat currency, and is not a security, commodity,
+      investment, or store of value of any kind. Nothing you do on testnet creates
+      an entitlement to anything of value.
+    </p>
+
+    <h3>The payment tools</h3>
+    <p>
+      <code>send_payment</code> is experimental and is disabled by default — it is
+      not merely switched off but never registered, so an unarmed install cannot
+      see or invoke it. Enabling it requires four separate, deliberate acts by you,
+      including setting a per-payment ceiling. <b>If you arm it, you accept full
+      responsibility for every payment it makes.</b> The ceiling is a safety limit
+      you choose; it is not a guarantee by us.
+    </p>
+    <p>
+      The <code>/pay.html</code> page is a developer test harness that moves a
+      fixed, trivial amount of Test-Pi so you can verify your own setup. It is not
+      a product, not a donation, and not a purchase. It buys you nothing, entitles
+      you to nothing, and is not refundable — see section 7.
+    </p>
+
+    <div class="callout">
+      <p>
+        <b>Agents can be manipulated.</b> The realistic risk with an AI agent that
+        can spend is not a stolen key — it is an agent persuaded to act by
+        instructions embedded in data it just read. If you give an agent spending
+        power, you are accepting that risk. Set a ceiling, keep a human in the
+        loop, and never arm payments with credentials whose loss would matter.
+      </p>
+    </div>
+  </section>
+
+  <section>
+    <h2><span class="no">5.</span>Your responsibilities</h2>
+    <p>You are solely responsible for:</p>
+    <ul>
+      <li><b>Your credentials.</b> API keys, wallet secrets, seed phrases, and access
+        tokens stay on your systems. We never ask for them and cannot recover them.
+        Anyone claiming to be us and asking for a seed phrase is committing fraud.</li>
+      <li><b>Your configuration.</b> Whether you arm payments, what ceiling you set,
+        which network you point at, and which agent you connect.</li>
+      <li><b>Your agent's actions.</b> Anything an AI agent does through Pion is done
+        on your behalf and at your risk, including actions you did not intend.</li>
+      <li><b>Verifying anything that matters.</b> Confirm consequential results
+        independently — on a block explorer or directly against Pi — before relying
+        on them.</li>
+      <li><b>Compliance.</b> Your use of the Service must comply with all applicable
+        laws, including sanctions, export control, anti-money-laundering, tax, and
+        securities laws, and with Pi Network's own terms.</li>
+    </ul>
+  </section>
+
+  <section>
+    <h2><span class="no">6.</span>Acceptable use</h2>
+    <p>You agree not to:</p>
+    <ul>
+      <li>use the Service for any unlawful purpose, or to facilitate fraud, money
+        laundering, sanctions evasion, or theft;</li>
+      <li>attack, overload, or attempt to disrupt the Service or its hosting — including
+        excessive automated requests to our endpoints, or any use that degrades them for others;</li>
+      <li>attempt to gain unauthorised access to any account, system, endpoint, or
+        credential, whether ours or anyone else's;</li>
+      <li>use the Service to approve, complete, or manipulate payments other than
+        your own legitimate ones;</li>
+      <li>misrepresent the Service as official, endorsed by Pi Network, or as
+        anything other than an unofficial community project;</li>
+      <li>use the Service to harm, harass, defraud, or impersonate others.</li>
+    </ul>
+    <p>
+      We may block, rate-limit, or refuse access to our hosted endpoints for any
+      use we reasonably believe breaches this section, without notice.
+    </p>
+  </section>
+
+  <section>
+    <h2><span class="no">7.</span>Blockchain transactions are irreversible</h2>
+    <p>
+      Transactions written to a blockchain are final. Neither we nor Pi Network can
+      reverse, cancel, refund, or alter a confirmed transaction, and we cannot
+      recover value sent to a wrong address or lost to a mistaken instruction. Any
+      payment made through or in connection with the Service is non-refundable by
+      us, because we never receive or hold it.
+    </p>
+    <p>
+      Blockchain networks can also fail in ways nobody controls: congestion,
+      outages, forks, reorganisations, protocol changes, and upstream API defects.
+      The Service depends on Pi Network's infrastructure and inherits every one of
+      those failure modes. We do not guarantee that any transaction will confirm,
+      or that a reported result reflects the true state of the chain.
+    </p>
+  </section>
+
+  <section>
+    <h2><span class="no">8.</span>Third-party services</h2>
+    <p>
+      The Service depends on and links to things we do not operate — Pi Network's
+      Horizon and Platform APIs, the Pi SDK and Pi Browser, Netlify, GitHub, npm,
+      Google Fonts, and your own AI client. We are not responsible for their
+      availability, accuracy, security, pricing, or conduct, and their terms govern
+      your use of them. A link is not an endorsement.
+    </p>
+  </section>
+
+  <section>
+    <h2><span class="no">9.</span>Open source and intellectual property</h2>
+    <p>
+      The Pion source code is licensed under the Apache License, Version 2.0, and
+      the text of that licence governs your rights in the code — including the
+      right to use, modify, and redistribute it. Where these Terms and the Apache
+      Licence differ as to the software itself, <b>the Apache Licence prevails</b>.
+      These Terms govern the website and any hosted endpoints, which the licence
+      does not cover.
+    </p>
+    <p>
+      The Pion name, the site's text, and its design are ours and are not granted
+      to you by the code licence. You may of course refer to Pion by name, and you
+      may fork the project as the licence permits — but do not present a fork as
+      the official project.
+    </p>
+    <p>
+      If you contribute to the project, your contribution is submitted under
+      Apache-2.0 as set out in section 5 of that licence.
+    </p>
+  </section>
+
+  <section>
+    <h2><span class="no">10.</span>Availability</h2>
+    <p>
+      The Service is provided free of charge with no service level commitment. We
+      may change, suspend, limit, or discontinue any part of it — including the
+      website and the hosted endpoints — at any time, for any reason, without
+      notice and without liability to you. The software is open source, so a
+      discontinued Service does not take your ability to run your own copy with it.
+    </p>
+  </section>
+
+  <section>
+    <h2><span class="no">11.</span>Disclaimer of warranties</h2>
+    <div class="caps">
+      <p>
+        THE SERVICE IS PROVIDED “AS IS” AND “AS AVAILABLE”, WITH ALL FAULTS AND
+        WITHOUT WARRANTY OF ANY KIND. TO THE MAXIMUM EXTENT PERMITTED BY LAW, WE
+        DISCLAIM ALL WARRANTIES, EXPRESS, IMPLIED, OR STATUTORY, INCLUDING ANY
+        IMPLIED WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE,
+        TITLE, ACCURACY, AND NON-INFRINGEMENT.
+      </p>
+      <p>
+        WE DO NOT WARRANT THAT THE SERVICE WILL BE UNINTERRUPTED, TIMELY, SECURE,
+        OR ERROR-FREE, THAT DEFECTS WILL BE CORRECTED, OR THAT ANY DATA IT RETURNS
+        IS ACCURATE, COMPLETE, OR CURRENT. YOU USE THE SERVICE ENTIRELY AT YOUR OWN
+        RISK.
+      </p>
+    </div>
+    <p>
+      Some jurisdictions do not allow the exclusion of certain warranties. To that
+      extent, the exclusions above may not apply to you, and you may have rights
+      that these Terms cannot limit.
+    </p>
+  </section>
+
+  <section>
+    <h2><span class="no">12.</span>Limitation of liability</h2>
+    <div class="caps">
+      <p>
+        TO THE MAXIMUM EXTENT PERMITTED BY LAW, WE WILL NOT BE LIABLE FOR ANY
+        INDIRECT, INCIDENTAL, SPECIAL, CONSEQUENTIAL, EXEMPLARY, OR PUNITIVE
+        DAMAGES, OR FOR ANY LOSS OF PROFITS, REVENUE, DATA, GOODWILL, CRYPTOCURRENCY,
+        TOKENS, OR OTHER DIGITAL ASSETS, ARISING OUT OF OR RELATING TO THE SERVICE,
+        WHETHER IN CONTRACT, TORT, STRICT LIABILITY, OR ANY OTHER THEORY, AND EVEN
+        IF WE HAVE BEEN ADVISED OF THE POSSIBILITY OF SUCH DAMAGES.
+      </p>
+      <p>
+        OUR TOTAL AGGREGATE LIABILITY ARISING OUT OF OR RELATING TO THE SERVICE OR
+        THESE TERMS WILL NOT EXCEED THE GREATER OF (A) THE AMOUNT YOU PAID US FOR
+        THE SERVICE IN THE TWELVE MONTHS BEFORE THE CLAIM AROSE, WHICH FOR
+        ESSENTIALLY EVERY USER IS ZERO, AND (B) USD $100.
+      </p>
+    </div>
+    <p>
+      These limits apply even if a limited remedy fails of its essential purpose,
+      and they reflect a reasonable allocation of risk for software provided free of
+      charge. Nothing in these Terms excludes liability that cannot lawfully be
+      excluded — including liability for fraud, fraudulent misrepresentation, or
+      death or personal injury caused by negligence.
+    </p>
+  </section>
+
+  <section>
+    <h2><span class="no">13.</span>Indemnity</h2>
+    <p>
+      You agree to indemnify and hold harmless Justin Black and the Pion project
+      from any claim, demand, loss, liability, or expense (including reasonable
+      legal fees) arising out of your use of the Service, your breach of these
+      Terms, your violation of any law or third-party right, or the actions of any
+      AI agent you connect to the Service.
+    </p>
+  </section>
+
+  <section>
+    <h2><span class="no">14.</span>Governing law and disputes</h2>
+    <p>
+      These Terms are governed by the laws of the State of Texas, USA, without
+      regard to its conflict-of-laws rules. The United Nations Convention on
+      Contracts for the International Sale of Goods does not apply.
+    </p>
+    <p>
+      You and we agree that any dispute arising out of or relating to these Terms
+      or the Service will be brought exclusively in the state or federal courts
+      located in Texas, and each of us consents to personal jurisdiction there.
+      If you are a consumer, this does not deprive you of the protection of
+      mandatory consumer-law rights available to you where you live, including any
+      right to bring proceedings in your local courts.
+    </p>
+    <p>
+      Before filing anything, please email
+      <a href="mailto:contact@pionmcp.com">contact@pionmcp.com</a>. Most problems
+      with a free open-source project are faster to solve that way.
+    </p>
+  </section>
+
+  <section>
+    <h2><span class="no">15.</span>Changes to these Terms</h2>
+    <p>
+      We may revise these Terms. The current version is always posted here with its
+      “last updated” date, and the full revision history is public in the
+      <a href="https://github.com/jleeblack/pion-mcp">project repository</a>. For
+      material changes we will note the change prominently on the site. Continuing
+      to use the Service after a revision takes effect means you accept it; if you
+      do not, stop using the Service.
+    </p>
+  </section>
+
+  <section>
+    <h2><span class="no">16.</span>General</h2>
+    <ul>
+      <li><b>Severability.</b> If any provision is held unenforceable, it is
+        modified to the minimum extent necessary or severed, and the rest remains
+        in force.</li>
+      <li><b>No waiver.</b> Our failure to enforce a provision is not a waiver of
+        it.</li>
+      <li><b>Assignment.</b> You may not assign these Terms without our consent. We
+        may assign them in connection with a transfer of the project.</li>
+      <li><b>Entire agreement.</b> These Terms and the
+        <a href="/privacy">Privacy Policy</a> are the entire agreement between us
+        about the Service, superseding any prior understanding — except that the
+        Apache-2.0 licence separately governs the source code.</li>
+      <li><b>No third-party beneficiaries.</b> These Terms create no rights for
+        anyone other than you and us.</li>
+      <li><b>Survival.</b> Sections 7 and 11 through 16 survive any termination.</li>
+    </ul>
+  </section>
+
+  <section>
+    <h2><span class="no">17.</span>Contact</h2>
+    <p>
+      Justin Black — Pion<br>
+      <a href="mailto:contact@pionmcp.com">contact@pionmcp.com</a><br>
+      <a href="https://github.com/jleeblack/pion-mcp">github.com/jleeblack/pion-mcp</a>
+    </p>
+  </section>
+
+  <footer>
+    <span>© 2026 Pion. <a href="/privacy">Privacy</a> · <a href="/">Home</a></span>
+    <span>Unofficial community project — not affiliated with or endorsed by Pi Network.</span>
+  </footer>
+
+</div>
+</body>
+</html>

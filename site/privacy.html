@@ -1,0 +1,434 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Privacy Policy — Pion</title>
+<meta name="description" content="Privacy policy for Pion, an unofficial Model Context Protocol server for Pi Network, and for the pionmcp.com website.">
+<meta property="og:title" content="Privacy Policy — Pion">
+<meta property="og:description" content="What Pion collects, what it does not, and who else sees your data.">
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://pionmcp.com/privacy">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=STIX+Two+Text:ital,wght@0,400;0,600;0,700;1,400&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --paper:#FAFAF6;
+    --ink:#1B1B22;
+    --accent:#6B3FA0;   /* Pi violet */
+    --muted:#67676F;
+    --rule:#D8D6CC;
+    --code-bg:#F1EFE8;
+  }
+  *{margin:0;padding:0;box-sizing:border-box}
+  html{scroll-behavior:smooth}
+  body{
+    background:var(--paper);
+    color:var(--ink);
+    font-family:"STIX Two Text",Georgia,serif;
+    font-size:1.0625rem;
+    line-height:1.65;
+  }
+  .page{max-width:44rem;margin:0 auto;padding:3.5rem 1.5rem 5rem}
+
+  .masthead{
+    font-family:"IBM Plex Mono",monospace;
+    font-size:.75rem;
+    letter-spacing:.04em;
+    color:var(--muted);
+    display:flex;justify-content:space-between;gap:1rem;flex-wrap:wrap;
+    border-bottom:1px solid var(--rule);
+    padding-bottom:.9rem;
+  }
+  .masthead a{color:var(--muted)}
+
+  .titleblock{text-align:center;margin:3.2rem 0 2.6rem}
+  h1{
+    font-size:clamp(2rem,5.5vw,2.7rem);
+    font-weight:700;
+    letter-spacing:-.01em;
+    line-height:1.15;
+  }
+  .dates{
+    font-family:"IBM Plex Mono",monospace;
+    font-size:.78rem;color:var(--muted);
+    margin-top:1.1rem;letter-spacing:.03em;
+  }
+
+  .abstract{
+    border-top:1px solid var(--ink);
+    border-bottom:1px solid var(--ink);
+    padding:1.35rem 1.6rem;
+    margin:0 auto 3rem;
+  }
+  .abstract .label{
+    font-family:"IBM Plex Mono",monospace;
+    font-size:.72rem;letter-spacing:.18em;text-transform:uppercase;
+    color:var(--accent);
+    display:block;margin-bottom:.55rem;
+  }
+  .abstract p{font-size:1rem}
+  .abstract p + p{margin-top:.8rem}
+
+  section{margin:2.8rem 0}
+  h2{font-size:1.28rem;font-weight:700;margin-bottom:1rem}
+  h2 .no{color:var(--accent);margin-right:.55rem}
+  h3{
+    font-family:"IBM Plex Mono",monospace;
+    font-size:.8rem;letter-spacing:.1em;text-transform:uppercase;
+    color:var(--muted);font-weight:500;
+    margin:1.7rem 0 .6rem;
+  }
+  p + p{margin-top:.9rem}
+  a{color:var(--accent);text-decoration-thickness:1px;text-underline-offset:2.5px}
+  a:hover{text-decoration-thickness:2px}
+  a:focus-visible{outline:2px solid var(--accent);outline-offset:2px;border-radius:2px}
+
+  ul{margin:.9rem 0 0 0;list-style:none}
+  ul li{padding:.3rem 0 .3rem 1.4rem;position:relative}
+  ul li::before{
+    content:"—";position:absolute;left:0;top:.3rem;
+    color:var(--muted);font-size:.9rem;
+  }
+  li + li{margin-top:.1rem}
+
+  code{
+    font-family:"IBM Plex Mono",monospace;
+    font-size:.86em;
+    background:var(--code-bg);
+    padding:.1em .35em;border-radius:3px;
+  }
+
+  table{
+    width:100%;border-collapse:collapse;
+    font-size:.95rem;margin-top:1.2rem;
+  }
+  th{
+    font-family:"IBM Plex Mono",monospace;
+    font-size:.72rem;letter-spacing:.12em;text-transform:uppercase;
+    color:var(--muted);font-weight:500;
+    text-align:left;padding:.5rem .6rem;
+    border-bottom:1px solid var(--ink);
+  }
+  td{padding:.65rem .6rem;border-bottom:1px solid var(--rule);vertical-align:top}
+
+  .callout{
+    border-left:2px solid var(--accent);
+    padding:.15rem 0 .15rem 1.1rem;
+    margin-top:1.1rem;
+  }
+
+  footer{
+    margin-top:4rem;padding-top:1.1rem;
+    border-top:1px solid var(--rule);
+    font-size:.84rem;color:var(--muted);
+    display:flex;justify-content:space-between;gap:1rem;flex-wrap:wrap;
+  }
+  footer a{color:var(--muted)}
+</style>
+</head>
+<body>
+<div class="page">
+
+  <div class="masthead">
+    <span><a href="/">pion-mcp</a> · privacy policy</span>
+    <span><a href="/terms">terms</a> · <a href="https://github.com/jleeblack/pion-mcp">github</a></span>
+  </div>
+
+  <div class="titleblock">
+    <h1>Privacy Policy</h1>
+    <p class="dates">Effective 3 August 2026 · Last updated 3 August 2026</p>
+  </div>
+
+  <div class="abstract">
+    <span class="label">Summary</span>
+    <p>
+      Pion has no accounts, no database, no analytics, and no advertising. The MCP
+      server runs entirely on your own machine and sends nothing to us — we operate
+      no server it talks to. This website sets no cookies and does not track you.
+    </p>
+    <p>
+      The parts worth reading are the ones where somebody <em>else</em> receives
+      data: Pi Network, our hosting provider, and Google Fonts. Those are set out
+      in sections 3 and 5.
+    </p>
+  </div>
+
+  <section>
+    <h2><span class="no">1.</span>Who this policy is from</h2>
+    <p>
+      Pion is an unofficial, open-source community project operated by Justin Black,
+      an individual, in the State of Texas, USA (“we”, “us”). It is
+      <strong>not affiliated with, endorsed by, or operated by Pi Network, the Pi
+      Community Company, or SocialChain</strong>.
+    </p>
+    <p>
+      Contact for any privacy question or request:
+      <a href="mailto:contact@pionmcp.com">contact@pionmcp.com</a>.
+    </p>
+  </section>
+
+  <section>
+    <h2><span class="no">2.</span>What this policy covers</h2>
+    <p>Pion is three separate things, and they handle data differently:</p>
+    <table>
+      <thead><tr><th>Component</th><th>Where it runs</th></tr></thead>
+      <tbody>
+        <tr>
+          <td><b>The MCP server</b><br><code>pion-mcp</code> on npm</td>
+          <td>On your own computer, inside your own AI client. We never see it run.</td>
+        </tr>
+        <tr>
+          <td><b>The website</b><br>pionmcp.com</td>
+          <td>Static pages on Netlify. No cookies, no analytics.</td>
+        </tr>
+        <tr>
+          <td><b>The payment test page</b><br>/pay.html and its two functions</td>
+          <td>A developer test harness using the Pi SDK and two serverless endpoints.</td>
+        </tr>
+      </tbody>
+    </table>
+    <p>
+      This policy does not cover Pi Network itself, your AI client (Claude, Cursor,
+      or any other), or any third-party site we link to. Those have their own
+      policies and we have no control over them.
+    </p>
+  </section>
+
+  <section>
+    <h2><span class="no">3.</span>The MCP server</h2>
+
+    <h3>What we collect</h3>
+    <p>
+      Nothing. The <code>pion-mcp</code> package runs locally under your control.
+      It contains no telemetry, no analytics, no crash reporting, and no
+      phone-home of any kind. It never transmits data to us, because there is no
+      “us” for it to transmit to — we run no backend service for the MCP server.
+    </p>
+
+    <h3>What it sends elsewhere, on your instruction</h3>
+    <p>
+      When your agent calls a Pion tool, Pion makes an outbound request to a Pi
+      Network endpoint. Whatever you asked about is in that request:
+    </p>
+    <ul>
+      <li><code>get_wallet_balance</code>, <code>get_account_payments</code>, and
+        <code>query_transaction</code> send the wallet address or transaction hash
+        you supplied to Pi Testnet Horizon at <code>api.testnet.minepi.com</code>.</li>
+      <li><code>verify_user</code> sends a Pi user access token — which
+        <em>you</em> supply — to the Pi Platform API at <code>api.minepi.com</code>,
+        and returns the uid and username Pi replies with. Pion does not store,
+        cache, or log that token.</li>
+      <li><code>send_payment</code>, only if you have deliberately armed it, sends
+        payment details and uses credentials you configured yourself in your own
+        environment. Those credentials stay on your machine and are never
+        transmitted to us.</li>
+    </ul>
+    <p>
+      Those requests are governed by Pi Network's privacy policy, not this one.
+      Your AI client may also retain a record of the conversation, including tool
+      inputs and outputs, under its own policy.
+    </p>
+
+    <div class="callout">
+      <p>
+        <b>Blockchain data is public and permanent.</b> Anything recorded on the Pi
+        ledger — addresses, amounts, memos, timestamps — is visible to anyone and
+        cannot be edited or deleted by us, by you, or by Pi Network. Do not put
+        anything in a payment memo that you would not publish. No right of erasure
+        can reach data already written to a blockchain.
+      </p>
+    </div>
+  </section>
+
+  <section>
+    <h2><span class="no">4.</span>The website</h2>
+
+    <h3>Cookies and tracking</h3>
+    <p>
+      pionmcp.com sets no cookies, uses no local or session storage for tracking,
+      and runs no analytics, advertising, pixels, session recording, or
+      fingerprinting. There is no consent banner because there is nothing to
+      consent to.
+    </p>
+
+    <h3>Server logs</h3>
+    <p>
+      The site is hosted by Netlify, which automatically records standard web
+      server request data — IP address, timestamp, requested URL, referrer, and
+      user-agent string — as part of delivering the site and protecting it from
+      abuse. This is handled under Netlify's own retention practices; we do not
+      export, analyse, enrich, or build profiles from it. Our legal basis, where
+      the GDPR applies, is legitimate interest in operating and securing the site.
+    </p>
+
+    <h3>Fonts</h3>
+    <p>
+      These pages load typefaces from Google Fonts
+      (<code>fonts.googleapis.com</code> and <code>fonts.gstatic.com</code>). Your
+      browser therefore contacts Google's servers, which receive your IP address
+      and user-agent as a consequence. We receive nothing from this and set no
+      Google cookie, but you should know the request happens. It is subject to
+      Google's privacy policy.
+    </p>
+  </section>
+
+  <section>
+    <h2><span class="no">5.</span>The payment test page</h2>
+    <p>
+      <code>/pay.html</code> is a developer harness for verifying a User-to-App
+      payment on Pi Testnet. It moves Test-Pi, which has no monetary value. If you
+      never open it, none of this section applies to you.
+    </p>
+
+    <h3>In your browser</h3>
+    <p>
+      The page loads the Pi SDK from Pi Network and calls
+      <code>Pi.authenticate</code> requesting the <code>payments</code> and
+      <code>wallet_address</code> scopes. Pi asks you to approve that. If you do,
+      the page receives your Pi uid and the list of granted scopes, and displays
+      your uid on screen so you can confirm the right account is connected.
+    </p>
+    <p>
+      That uid is held in the page's memory for the length of your visit and is
+      gone when you close the tab. It is not stored, not sent to our servers, and
+      not shared. The Pi access token is a credential: the page deliberately never
+      displays it, never stores it, and never sends it to our backend.
+    </p>
+
+    <h3>On our serverless endpoints</h3>
+    <p>
+      Completing a Pi payment requires the app's server to approve it. Two Netlify
+      functions do this and nothing else:
+    </p>
+    <ul>
+      <li><code>/approve</code> receives a payment ID, asks Pi for that payment's
+        real details, refuses it unless it matches the exact test payment this
+        page offers, and then approves it.</li>
+      <li><code>/complete</code> receives a payment ID and a blockchain transaction
+        ID and asks Pi to mark the payment complete.</li>
+    </ul>
+    <p>
+      These endpoints receive payment identifiers and transaction hashes — no
+      names, no emails, no wallet secrets, no access tokens. <b>We store none of
+      it.</b> There is no database behind this site. The identifiers pass through
+      to Pi and the function forgets them when it returns. Netlify may retain
+      transient function execution logs under its own practices.
+    </p>
+    <p>
+      A Pi server API key is used to authenticate to Pi from the server side. It
+      lives only in server environment variables, is never sent to your browser,
+      and is deliberately excluded from every error message the endpoints return.
+    </p>
+  </section>
+
+  <section>
+    <h2><span class="no">6.</span>What we never do</h2>
+    <ul>
+      <li>We do not sell, rent, or share personal information with third parties for
+        money or for cross-context behavioural advertising. We never have and this
+        project has no business model that would call for it.</li>
+      <li>We do not build profiles, run automated decision-making, or engage in
+        profiling with legal or similarly significant effects.</li>
+      <li>We do not send marketing email. There is no mailing list.</li>
+      <li>We do not ask for, receive, or store wallet private keys, seed phrases, or
+        recovery passphrases. Pion cannot hold your funds. Anyone claiming to be us
+        and asking for a seed phrase is committing fraud.</li>
+    </ul>
+  </section>
+
+  <section>
+    <h2><span class="no">7.</span>Retention</h2>
+    <p>
+      We hold no personal data ourselves, so there is nothing on our side to retain
+      or delete. Hosting-level records (server logs, function logs) are retained by
+      Netlify under its own schedule and expire automatically. Data recorded on the
+      Pi blockchain is permanent and outside anyone's control, including ours.
+    </p>
+  </section>
+
+  <section>
+    <h2><span class="no">8.</span>Your rights</h2>
+    <p>
+      Depending on where you live, you may have rights to access, correct, delete,
+      port, or restrict processing of your personal data, or to object to it —
+      under the GDPR, the UK GDPR, the CCPA/CPRA, and comparable laws. You also
+      have the right not to be discriminated against for exercising them.
+    </p>
+    <p>
+      Write to <a href="mailto:contact@pionmcp.com">contact@pionmcp.com</a> and we
+      will respond within the period the applicable law requires. Be aware of the
+      honest limit: because we maintain no user records, in most cases the accurate
+      answer to an access or deletion request will be that we hold nothing about
+      you. For data held by Pi Network or written to the Pi blockchain, you will
+      need to approach Pi Network directly — we cannot reach it.
+    </p>
+    <p>
+      If you are in the EEA or UK you may also complain to your national data
+      protection authority.
+    </p>
+  </section>
+
+  <section>
+    <h2><span class="no">9.</span>International transfers</h2>
+    <p>
+      The website and its serverless functions are hosted on infrastructure located
+      in the United States. If you access Pion from outside the US, the limited
+      request data described above is processed there.
+    </p>
+  </section>
+
+  <section>
+    <h2><span class="no">10.</span>Children</h2>
+    <p>
+      Pion is developer tooling and is not directed to children. We do not knowingly
+      collect personal information from anyone under 13 (or under 16 where local law
+      sets that threshold). If you believe a child has provided us with personal
+      information, contact us and we will address it.
+    </p>
+  </section>
+
+  <section>
+    <h2><span class="no">11.</span>Security</h2>
+    <p>
+      The best security property of this project is architectural: we hold almost
+      nothing, so there is almost nothing to breach. Server-side secrets are kept in
+      environment variables and excluded from responses and logs; the default MCP
+      install has no credentials at all and cannot move value.
+    </p>
+    <p>
+      No system is perfectly secure. If you find a vulnerability, please report it
+      to <a href="mailto:contact@pionmcp.com">contact@pionmcp.com</a> rather than
+      disclosing it publicly, and give us a reasonable chance to fix it.
+    </p>
+  </section>
+
+  <section>
+    <h2><span class="no">12.</span>Changes</h2>
+    <p>
+      If this policy changes, the updated version will be posted here with a new
+      “last updated” date, and its full revision history is public in the
+      <a href="https://github.com/jleeblack/pion-mcp">project repository</a>. For
+      material changes we will note the change prominently on the site. Continuing
+      to use Pion after a change means you accept the revised policy.
+    </p>
+  </section>
+
+  <section>
+    <h2><span class="no">13.</span>Contact</h2>
+    <p>
+      Justin Black — Pion<br>
+      <a href="mailto:contact@pionmcp.com">contact@pionmcp.com</a><br>
+      <a href="https://github.com/jleeblack/pion-mcp">github.com/jleeblack/pion-mcp</a>
+    </p>
+  </section>
+
+  <footer>
+    <span>© 2026 Pion. <a href="/terms">Terms</a> · <a href="/">Home</a></span>
+    <span>Unofficial community project — not affiliated with or endorsed by Pi Network.</span>
+  </footer>
+
+</div>
+</body>
+</html>

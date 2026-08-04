@@ -65,10 +65,15 @@
       #log li { padding: 0.3rem 0; border-bottom: 1px solid #e6e6ea; }
       #log li:last-child { border-bottom: 0; }
 
+      footer { margin-top: 2.5rem; padding-top: 1rem;
+               border-top: 1px solid #e6e6ea; font-size: 13px; }
+      footer p + p { margin-top: 0.5rem; }
+
       @media (prefers-color-scheme: dark) {
         body { background: #16161a; color: #eee; }
         pre { background: #24242b; }
         #log li { border-color: #2c2c34; }
+        footer { border-color: #2c2c34; }
         #verdict.ok { background: #10301f; color: #7fe0ab; }
         #verdict.no { background: #3a121b; color: #ff9aa9; }
       }
@@ -106,6 +111,19 @@
 
     <h2>Flow</h2>
     <ul id="log"><li class="muted">Nothing yet.</li></ul>
+
+    <footer>
+      <p class="muted">
+        Authenticating shares your app-scoped uid with this page; the access token
+        is never displayed or stored. See the
+        <a href="/privacy">Privacy Policy</a> and
+        <a href="/terms">Terms of Service</a>.
+      </p>
+      <p class="muted">
+        Test-Pi has no monetary value. Unofficial community project — not
+        affiliated with or endorsed by Pi Network.
+      </p>
+    </footer>
 
     <script>
       const AMOUNT = 0.314;
