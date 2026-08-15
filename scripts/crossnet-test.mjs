@@ -14,7 +14,7 @@
  * on *both* chains, with different amounts and sequence numbers. Presence is
  * therefore not a network discriminator, and — the part that matters — a read
  * against the wrong chain does not reliably fail. It can return a plausible
- * number. See docs/pi-sdk-notes.md, Layer 3.
+ * number. See docs/FINDINGS.md, finding 5.
  *
  * So the checks below use two things that do hold:
  *

@@ -245,6 +245,9 @@ Pi-Browser frontend hands it the paymentId.
   labelling the network on every single result rather than only at startup, and
   it is what `npm run crossnet` guards.
 
+  **Published as `FINDINGS.md` finding 5**, which is the version to cite
+  externally. This entry keeps the working detail; that one carries the writeup.
+
   *Not claimed:* that Pi derives one keypair per passphrase across both
   networks. Co-existence proves the same public key is registered on both chains,
   not the mechanism. It does bear on the P0 question in `pre-mainnet.md` about

@@ -82,7 +82,7 @@ async function describeFailure(response: Response, path: string): Promise<string
     // account on the chain it does not live on, and that is invisible unless
     // said. Note the asymmetry: a 404 is evidence the address is absent *here*,
     // but a success is not evidence you asked the right chain — some addresses
-    // exist on both with different balances (docs/pi-sdk-notes.md, Layer 3).
+    // exist on both with different balances (docs/FINDINGS.md, finding 5).
     return (
       `Not found on ${NETWORK.label} Horizon (${HORIZON_URL}${path}). The account or ` +
       `transaction does not exist on ${NETWORK.label}, or has never been funded. ` +

@@ -14,7 +14,7 @@ import { PlatformError } from "../platform.js";
  *
  * The wording is deliberate about what a wrong-chain read looks like. Measured
  * 2026-08-14: some Pi addresses hold a balance on *both* chains, with different
- * amounts (see docs/pi-sdk-notes.md, Layer 3). So querying the wrong network does not
+ * amounts (docs/FINDINGS.md, finding 5). So querying the wrong network does not
  * reliably produce a not-found error — it can produce a well-formed, plausible,
  * wrong number. That is why the network is stated rather than implied.
  */

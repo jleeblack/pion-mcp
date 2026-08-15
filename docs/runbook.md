@@ -484,17 +484,29 @@ And an immutable transaction, `f8b6d6c83dfb32452330b677d901748fb6cece6c36d9b2def
 at ledger 28210699 — `successful: true`, `fee_charged: 100000`, memo_type `text`,
 memo `PML-Trq5irLcr0dsUap1N6gwZCZz` — identical through both paths.
 
-**Third source — human eyes on the explorer.** Field *values* must be compared,
-not merely that a page renders: the explorer is a client-side app that returns
-HTTP 200 for everything, including nonsense, so a status check proves nothing.
+**Third source — human eyes on the explorer. Done 2026-08-14; gate closed.**
+Field *values* must be compared, not merely that a page renders: the explorer is
+a client-side app that returns HTTP 200 for everything, including nonsense, so a
+status check proves nothing.
 
 ```
-https://blockexplorer.minepi.com/mainnet/account/GCZYTVXS2K7DY3LJ6F3P5CVH3OU4ZGUKAXAUTE3K7NZGNH55ONISQCMB
 https://blockexplorer.minepi.com/mainnet/tx/f8b6d6c83dfb32452330b677d901748fb6cece6c36d9b2deff64bead6e1c6925
+https://blockexplorer.minepi.com/mainnet/account/GCZYTVXS2K7DY3LJ6F3P5CVH3OU4ZGUKAXAUTE3K7NZGNH55ONISQCMB
 ```
 
 The transaction is the better anchor of the two — it is immutable, where the
-balance drifts.
+balance drifts. Confirmed by eye against the transaction page: **fee 0.01 π,
+ledger 28210699, memo `PML-Trq5irLcr0dsUap1N6gwZCZz`** — all three matching the
+tool report and raw Horizon exactly. Three independent sources agree.
+
+*One nuance recorded so the next reader does not over-read this entry.* The
+explorer page renders the transaction's `create_claimable_balance` operation
+rather than an error state, which is consistent with success but is not by
+itself proof of it — Stellar explorers list the operations of failed
+transactions too, marking the failure elsewhere on the page. `successful: true`
+is attested by the tool report and raw Horizon, which agree; the explorer's
+contribution to this gate is the three field values above. That is enough, and
+saying which source proved which is the point of keeping the record.
 
 **Arming, under the worst configuration available.** With every payment
 credential present and correct and `PION_NETWORK=mainnet`: the server starts,
