@@ -2,7 +2,8 @@ import { z } from "zod";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 
 import { formatAsset, horizonGet } from "../horizon.js";
-import { fail, ok, walletAddress } from "./common.js";
+import type { PiNetwork } from "../networks.js";
+import { fail, networkNote, ok, walletAddress } from "./common.js";
 
 interface HorizonBalance {
   balance: string;
@@ -39,7 +40,7 @@ const outputSchema = {
   ),
 };
 
-export function registerGetWalletBalance(server: McpServer, network: string): void {
+export function registerGetWalletBalance(server: McpServer, network: PiNetwork): void {
   server.registerTool(
     "get_wallet_balance",
     {
@@ -48,7 +49,8 @@ export function registerGetWalletBalance(server: McpServer, network: string): vo
         "Read the current Pi and custom-token balances of a Pi wallet address. " +
         "Call this whenever you need to know how much Pi an address holds, whether it " +
         "holds a particular token, or whether the account exists on-chain at all. " +
-        "Reads public ledger data only — it cannot move funds and needs no credentials.",
+        "Reads public ledger data only — it cannot move funds and needs no credentials. " +
+        networkNote(network),
       inputSchema: { address: walletAddress },
       outputSchema,
       annotations: { readOnlyHint: true, openWorldHint: true },
@@ -57,7 +59,7 @@ export function registerGetWalletBalance(server: McpServer, network: string): vo
       try {
         const account = await horizonGet<HorizonAccount>(`/accounts/${address}`);
         return ok({
-          network,
+          network: network.label,
           account_id: account.account_id,
           sequence: account.sequence,
           subentry_count: account.subentry_count,

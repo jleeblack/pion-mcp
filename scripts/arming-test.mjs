@@ -15,6 +15,12 @@ import { StdioClientTransport } from "@modelcontextprotocol/sdk/client/stdio.js"
 import { Keypair } from "@stellar/stellar-sdk";
 
 import {
+  NetworkConfigError,
+  PI_MAINNET,
+  PI_TESTNET,
+  resolveNetwork,
+} from "../dist/networks.js";
+import {
   checkPaymentsArming,
   parseCreatedPayment,
   paymentMetadata,
@@ -31,7 +37,7 @@ const ARMED = {
   PI_WALLET_SECRET: THROWAWAY_SECRET,
   PION_MAX_PAYMENT_PI: "10",
 };
-const TESTNET = "https://api.testnet.minepi.com";
+const TESTNET = PI_TESTNET;
 
 let failures = 0;
 function check(name, fn) {
@@ -45,16 +51,73 @@ function check(name, fn) {
 }
 
 /** Runs checkPaymentsArming with a patched environment, then restores it. */
-function withEnv(overrides, horizon, fn) {
+function withEnv(overrides, network, fn) {
   const saved = { ...process.env };
   for (const key of Object.keys(ARMED)) delete process.env[key];
   Object.assign(process.env, overrides);
   try {
-    return fn(checkPaymentsArming(horizon));
+    return fn(checkPaymentsArming(network));
   } finally {
     process.env = saved;
   }
 }
+
+console.log("\nNetwork resolution — one source of truth for which chain we read:");
+
+check("defaults to testnet with no configuration", () => {
+  const { network } = resolveNetwork({});
+  assert.equal(network.id, "testnet");
+  assert.equal(network.horizonUrl, "https://api.testnet.minepi.com");
+  assert.equal(network.passphrase, "Pi Testnet");
+  assert.equal(network.isTestnet, true);
+});
+
+// The value the naming pattern gets wrong. Verified against the live node.
+check('mainnet passphrase is "Pi Network", not "Pi Mainnet"', () => {
+  const { network } = resolveNetwork({ PION_NETWORK: "mainnet" });
+  assert.equal(network.id, "mainnet");
+  assert.equal(network.horizonUrl, "https://api.mainnet.minepi.com");
+  assert.equal(network.passphrase, "Pi Network");
+  assert.equal(network.isTestnet, false);
+});
+
+check("mainnet label and passphrase are separate values", () =>
+  assert.notEqual(PI_MAINNET.label, PI_MAINNET.passphrase),
+);
+
+check("an unknown PION_NETWORK refuses to start rather than defaulting", () =>
+  assert.throws(() => resolveNetwork({ PION_NETWORK: "manet" }), NetworkConfigError),
+);
+
+check("PION_NETWORK is case- and whitespace-tolerant", () =>
+  assert.equal(resolveNetwork({ PION_NETWORK: "  MainNet " }).network.id, "mainnet"),
+);
+
+check("an explicit URL matching a known network resolves to it", () =>
+  assert.equal(
+    resolveNetwork({ PION_HORIZON_URL: "https://api.mainnet.minepi.com/" }).network.id,
+    "mainnet",
+  ),
+);
+
+check("PION_NETWORK and PION_HORIZON_URL naming different chains is fatal", () =>
+  assert.throws(
+    () =>
+      resolveNetwork({
+        PION_NETWORK: "mainnet",
+        PION_HORIZON_URL: "https://api.testnet.minepi.com",
+      }),
+    NetworkConfigError,
+  ),
+);
+
+check("an unrecognised endpoint resolves to custom, never to a Pi network", () => {
+  const { network, warning } = resolveNetwork({ PION_HORIZON_URL: "https://example.invalid" });
+  assert.equal(network.id, "custom");
+  assert.equal(network.isTestnet, false);
+  assert.equal(network.passphrase, undefined);
+  assert.ok(warning, "a custom endpoint must warn");
+});
 
 console.log("\nArming guards — each must refuse for its own specific reason:");
 
@@ -76,11 +139,40 @@ check("credentials alone do NOT arm it", () =>
   ),
 );
 
-check("refuses non-testnet Horizon even when fully configured", () =>
-  withEnv(ARMED, "https://api.mainnet.minepi.com", (r) => {
+check("refuses mainnet even when fully configured", () =>
+  withEnv(ARMED, PI_MAINNET, (r) => {
     assert.equal(r.armed, false);
-    assert.match(r.reason, /not testnet/);
+    assert.match(r.reason, /not Pi Testnet/);
   }),
+);
+
+check("refuses mainnet selected the way a user selects it", () =>
+  withEnv(ARMED, resolveNetwork({ PION_NETWORK: "mainnet" }).network, (r) => {
+    assert.equal(r.armed, false);
+    assert.match(r.reason, /PION_NETWORK=mainnet/);
+  }),
+);
+
+// The hole the v0.4 hardening closes. Arming used to be a substring test for
+// "testnet" anywhere in the Horizon URL, which every string below satisfies.
+for (const spoof of [
+  "https://api.mainnet.minepi.com/#testnet",
+  "https://api.mainnet.minepi.com/?net=testnet",
+  "https://testnet.example.invalid",
+  "https://api.testnet.minepi.com.example.invalid",
+]) {
+  check(`refuses testnet-lookalike URL ${spoof}`, () =>
+    withEnv(ARMED, resolveNetwork({ PION_HORIZON_URL: spoof }).network, (r) => {
+      assert.equal(r.armed, false, "a URL containing 'testnet' must not be enough to arm");
+      assert.match(r.reason, /not Pi Testnet/);
+    }),
+  );
+}
+
+check("refuses a custom endpoint even when it is genuinely reachable", () =>
+  withEnv(ARMED, resolveNetwork({ PION_HORIZON_URL: "http://127.0.0.1:8000" }).network, (r) =>
+    assert.equal(r.armed, false),
+  ),
 );
 
 check("missing server API key refuses", () =>
@@ -246,6 +338,36 @@ check("disarmed server does not advertise send_payment", () =>
 const armedTools = await toolsWith(ARMED);
 check("armed server does advertise send_payment", () =>
   assert.ok(armedTools.includes("send_payment"), `saw: ${armedTools.join(", ")}`),
+);
+
+// The v0.4 claim, end to end: every payment credential present and correct,
+// mainnet selected, and the agent still cannot see a spending tool.
+const mainnetTools = await toolsWith({ ...ARMED, PION_NETWORK: "mainnet" });
+check("mainnet server does not advertise send_payment despite full credentials", () =>
+  assert.ok(!mainnetTools.includes("send_payment"), `saw: ${mainnetTools.join(", ")}`),
+);
+check("mainnet server still advertises the read tools", () =>
+  assert.ok(
+    ["get_wallet_balance", "get_account_payments", "query_transaction"].every((t) =>
+      mainnetTools.includes(t),
+    ),
+    `saw: ${mainnetTools.join(", ")}`,
+  ),
+);
+
+const badNetwork = await new Promise((resolve) => {
+  const child = spawn(process.execPath, ["dist/index.js"], {
+    env: { ...process.env, PION_NETWORK: "manet" },
+  });
+  let stderr = "";
+  child.stderr.on("data", (d) => (stderr += d));
+  child.on("exit", (code) => resolve({ code, stderr }));
+});
+check("server exits non-zero on an unknown PION_NETWORK", () =>
+  assert.notEqual(badNetwork.code, 0),
+);
+check("and names the variable in the failure", () =>
+  assert.match(badNetwork.stderr, /PION_NETWORK/),
 );
 
 console.log("\nSpend cap enforcement (armed, cap = 10 Pi):");

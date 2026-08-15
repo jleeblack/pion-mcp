@@ -3,8 +3,10 @@
 **Model Context Protocol server for Pi Network** — connect AI agents
 (Claude, Cursor, and any MCP-compatible client) to Pi Network chain data.
 
-> ⚠️ Testnet only. Read-only by default; `send_payment` moves real funds and
-> must be explicitly armed.
+> ⚠️ **Reads: both networks. Payments: testnet only.** The chain tools query Pi
+> Mainnet or Pi Testnet, selected with `PION_NETWORK`. `send_payment` moves real
+> funds, must be explicitly armed, and *cannot* be armed on mainnet — Pi
+> restricts App-to-User payments to testnet.
 
 ## Why "Pion"?
 The pion is the π meson — the particle physicists named after pi.
@@ -18,7 +20,8 @@ and move no value. Tier C is the exception and is off unless you arm it.
 (Tiers refer to [`docs/tool-mapping.md`](https://github.com/jleeblack/pion-mcp/blob/main/docs/tool-mapping.md).)
 
 **Tier A — chain reads.** Zero-permission queries against Pi's public Horizon
-API. No credentials at all.
+API. No credentials at all. These work on **both Pi chains** — testnet by
+default, mainnet with `PION_NETWORK=mainnet`.
 
 | Tool | What it does |
 |---|---|
@@ -28,6 +31,13 @@ API. No credentials at all.
 
 Amounts are decimal strings. Pi is reported as the asset `PI`, custom tokens as
 `CODE:ISSUER`, and liquidity-pool shares as `pool:ID`.
+
+Every result names the chain it came from in a `network` field, and the startup
+banner says it too. That redundancy is deliberate: **the same address can hold
+different balances on both chains**, so a query against the wrong network does
+not reliably fail — it can return a plausible, well-formed, wrong number
+(measured 2026-08-14; see [`docs/pi-sdk-notes.md`](https://github.com/jleeblack/pion-mcp/blob/main/docs/pi-sdk-notes.md)).
+Testnet Pi has no monetary value.
 
 **Tier B — identity.**
 
@@ -60,8 +70,8 @@ alone is not enough — Pi needs that consent to resolve their wallet, and
 refuses payment creation with `missing_scope` otherwise. This is the
 recipient's consent, not your credentials.
 
-Arming requires **all four**, and Pi restricts A2U to testnet, so a non-testnet
-Horizon URL is refused outright:
+Arming requires **all four**, and Pi restricts A2U to testnet, so anything but
+Pi Testnet is refused outright:
 
 ```sh
 PION_ENABLE_PAYMENTS=1     # explicit switch, deliberately separate from credentials
@@ -120,7 +130,8 @@ claude mcp add pion -- node /absolute/path/to/pion-mcp/dist/index.js
 
 | Variable | Default | Purpose |
 |---|---|---|
-| `PION_HORIZON_URL` | `https://api.testnet.minepi.com` | Horizon base URL |
+| `PION_NETWORK` | `testnet` | Which chain the read tools query — `testnet` or `mainnet` |
+| `PION_HORIZON_URL` | derived from `PION_NETWORK` | Horizon base URL, overriding the above |
 | `PION_PLATFORM_URL` | `https://api.minepi.com` | Platform API base URL |
 | `PION_ENABLE_PAYMENTS` | unset (off) | Arms `send_payment` — see Tier C above |
 | `PION_MAX_PAYMENT_PI` | unset | Required per-payment ceiling when armed |
@@ -130,16 +141,24 @@ claude mcp add pion -- node /absolute/path/to/pion-mcp/dist/index.js
 For read-only use there is nothing to configure — `verify_user` takes its token
 as a call argument, not from the environment. The bottom four are needed only
 if you arm payments, and belong in a secrets manager, never in a committed
-file. The mainnet Horizon URL is still an open
-question — see the TODO in [`docs/pi-sdk-notes.md`](https://github.com/jleeblack/pion-mcp/blob/main/docs/pi-sdk-notes.md).
+file.
+
+`PION_NETWORK` and `PION_HORIZON_URL` are resolved once, in one place, into a
+single network object that the Horizon client, the banner, every tool result and
+the arming check all read. Setting both to contradictory chains is a startup
+error rather than a silent winner, and an unrecognised `PION_HORIZON_URL`
+resolves to an explicitly *unknown* chain — never to a Pi network by
+resemblance.
 
 ## Development
 
 ```sh
 npm run build      # compile src/ -> dist/
 npm run typecheck  # types only, no emit
-npm run smoke      # end-to-end: drives the built server against live testnet
-npm run arming     # Tier C guards and spend cap (no credentials needed)
+npm run smoke          # end-to-end against live testnet
+npm run smoke:mainnet  # the same checks against live mainnet
+npm run crossnet       # proves the two chains are actually distinguished
+npm run arming         # Tier C guards and spend cap (no credentials needed)
 ```
 
 `npm run smoke` spawns the server over stdio as a real MCP client, discovers a
@@ -150,9 +169,15 @@ It covers `verify_user` only on the **rejection** path — confirming a genuine
 token would need a real user credential, which the test deliberately does not
 handle. The success path is unverified; see below.
 
+`npm run crossnet` proves network selection is real rather than cosmetic. It
+does not rely on an address being absent from the other chain — that assumption
+is false — but on a wallet we control being testnet-only, and on a shared
+address returning *different* ledger state from each chain.
+
 `npm run arming` covers Tier C without touching real money: every refusal
 branch, the exact cap boundary, that credentials alone do not arm it, that a
-disarmed server does not advertise the tool, and that neither secret leaks into
+disarmed server does not advertise the tool, that a fully-credentialled mainnet
+server still refuses to advertise it, and that neither secret leaks into
 a result. It uses a freshly generated, never-funded keypair. The one live call
 it makes is a deliberately-rejected create against the Pi API, which proves the
 first failure stage end to end.
@@ -177,7 +202,7 @@ first failure stage end to end.
 
   This is why it ships **off**, and why turning it on takes four separate,
   deliberate acts: `PION_ENABLE_PAYMENTS=1`, a mandatory `PION_MAX_PAYMENT_PI`
-  ceiling, both credentials, and a testnet Horizon URL. Holding the credentials
+  ceiling, both credentials, and Pi Testnet as the selected network. Holding the credentials
   is not enough on its own. Disarmed, the tool is not registered at all, so an
   agent cannot see that a spending capability exists — that gate is deliberate
   design (see Tier C above), not a placeholder for unfinished work. The
@@ -195,7 +220,7 @@ wallet Pi will actually spend from.
 
 ## Roadmap
 
-The rest of Tier C: `get_payment_status`, `list_incomplete_payments`,
+Done in v0.4: mainnet reads. The rest of Tier C: `get_payment_status`, `list_incomplete_payments`,
 `approve_payment` / `complete_payment` / `cancel_payment` — the U2A backend half
 and the recovery tooling for stranded payments. See
 [`docs/tool-mapping.md`](https://github.com/jleeblack/pion-mcp/blob/main/docs/tool-mapping.md).

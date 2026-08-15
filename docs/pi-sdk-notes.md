@@ -192,7 +192,63 @@ Pi-Browser frontend hands it the paymentId.
 - **Read-only queries (account balances, transactions, payment history, ledgers)
   require no Pi permission, no API key, no Browser** — standard Horizon REST
 - Writing (trustlines, token minting, raw payments) requires holding a wallet secret key
-- TODO: confirm the mainnet Horizon URL and passphrase (docs cover testnet only)
+- **Mainnet Horizon and passphrase — confirmed 2026-08-14** (was a TODO; Pi's own
+  docs still cover testnet only). The URL follows the pattern. **The passphrase
+  does not:**
+
+  | | Horizon | Network passphrase |
+  |---|---|---|
+  | Testnet | `https://api.testnet.minepi.com` | `Pi Testnet` |
+  | Mainnet | `https://api.mainnet.minepi.com` | **`Pi Network`** |
+
+  Verified three ways. (1) Each node's root endpoint reports its own
+  `network_passphrase`, which for a Stellar network is definitive — it is the
+  string signatures are validated against. (2) Pi's production block-explorer
+  bundle carries `REACT_APP_MAINNET_PRIMARY_API_URL:"https://api.mainnet.minepi.com"`
+  and `REACT_APP_ENVIRONMENT:"PRODUCTION"`, confirming the URL first-party.
+  (3) They are demonstrably different chains: distinct IPs, ledger heights
+  ~2.05M apart, and the app wallet resolves on testnet while 404ing on mainnet.
+
+  **The trap:** the string `"Pi Mainnet"` *does* appear in that same first-party
+  bundle — once, as UI copy ("...has not been activated on the Pi Mainnet yet").
+  It is a display label, and anyone extrapolating `Pi Testnet` → `Pi Mainnet`
+  finds what looks like corroboration for a passphrase that would invalidate
+  every signature made with it. `src/networks.ts` keeps `label` and `passphrase`
+  as separate fields for exactly this reason.
+
+  A **secondary** mainnet Horizon exists at `https://api2.mainnet.minepi.com`
+  (`REACT_APP_MAINNET_SECONDARY_API_URL`), live and reporting the same
+  passphrase. Documented, deliberately not wired as automatic failover: two
+  hosts silently serving one client can disagree on ingestion lag, and a read
+  that quietly changes source makes a later "the balance was wrong" impossible
+  to reconstruct.
+
+- **Mainnet base fee equals testnet's: 100,000 stroops (0.01 Pi).** From
+  `/fee_stats` on both chains, 2026-08-14, and confirmed on a real mainnet
+  transaction (`fee_charged: "100000"`, tx `f8b6d6c8…`). Mainnet showed no
+  congestion spread at all — every percentile flat at 100,000 — while *testnet*
+  showed p90 at 169,046. So the fee-floor arithmetic in `FINDINGS.md` §3 carries
+  to mainnet unchanged. Not yet observed: the fee actually charged on a mainnet
+  **A2U** payment, which Pi does not currently permit.
+
+- **The same address can hold a balance on BOTH chains, with different amounts.**
+  Measured 2026-08-14. `GCZYTVXS2K7DY3LJ6F3P5CVH3OU4ZGUKAXAUTE3K7NZGNH55ONISQCMB`
+  held 2.0600000 Pi on mainnet (seq `107166829968883735`) and 32.2993800 Pi on testnet
+  (seq `45199857865982412`) at the same moment. Sampling six recent mainnet
+  accounts, three also existed on testnet and three 404'd — so it is common but
+  not universal.
+
+  **Why this matters more than it looks.** The intuition "if I query the wrong
+  network I will get a not-found" is false. A wrong-chain read can return a
+  well-formed, plausible, wrong number, with no error anywhere — the same shape
+  of silent-wrong-answer as `FINDINGS.md` §4. This is the whole argument for
+  labelling the network on every single result rather than only at startup, and
+  it is what `npm run crossnet` guards.
+
+  *Not claimed:* that Pi derives one keypair per passphrase across both
+  networks. Co-existence proves the same public key is registered on both chains,
+  not the mechanism. It does bear on the P0 question in `pre-mainnet.md` about
+  shared key derivation, and is evidence in that direction, not an answer.
 - **Block explorer: `blockexplorer.minepi.com/testnet`.** Serves the standard
   Stellar-explorer account view — payments, operations, signing tabs — which is
   more evidence that generic Stellar tooling conventions apply throughout, not

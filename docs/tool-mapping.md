@@ -10,6 +10,10 @@ Derived from `pi-sdk-notes.md`. This file tracks the build scope tier by tier.
 ### Tier A — zero-permission chain reads (Horizon/Stellar)
 No API key, no user consent needed. Safest possible starting tools.
 
+**Both networks since v0.4.** Selected with `PION_NETWORK` (`testnet` default,
+`mainnet`), resolved once in `src/networks.ts` and reported in every result's
+`network` field. Mainnet selection makes Tier C unarmable — see below.
+
 | Tool | Backing call | Status | Notes |
 |---|---|---|---|
 | `get_wallet_balance` | Horizon `GET /accounts/{address}` | ✅ shipped v0.1.0 | Pi + any custom token balances |
@@ -32,7 +36,10 @@ No API key, no user consent needed. Safest possible starting tools.
 | `cancel_payment` | `POST /payments/{id}/cancel` | planned | |
 
 ## Testnet only (platform restriction, not ours)
-- All A2U payments (`send_payment`) — per payments_advanced.md
+- All A2U payments (`send_payment`) — per payments_advanced.md. Enforced by
+  identity, not by URL inspection: arming requires the resolved network to *be*
+  Pi Testnet, so `PION_NETWORK=mainnet` and any unrecognised endpoint are both
+  refused, and the tool is not registered at all. Tier A reads are unaffected.
 - Token creation, trustlines, liquidity pools (Stellar ops from tokens guide) —
   candidate later tools: `create_token`, `establish_trustline` (deferred past v0.1)
 
@@ -58,8 +65,8 @@ against the live Platform API; the success path still needs a real user token
 
 **Unreleased — Tier C begins.** `send_payment` (A2U). Off unless armed by four
 separate conditions: `PION_ENABLE_PAYMENTS=1`, a mandatory `PION_MAX_PAYMENT_PI`
-ceiling, both credentials, and a testnet Horizon URL. Credentials alone do not
-arm it. Not registered at all when disarmed, so a default server does not
+ceiling, both credentials, and Pi Testnet as the resolved network. Credentials
+alone do not arm it. Not registered at all when disarmed, so a default server does not
 advertise a spend tool.
 
 Guards, the cap boundary, and the create-step failure are verified
@@ -192,7 +199,9 @@ and wallet secret genuinely are server-owned.
    fee-bumping or channel mechanism. Both are on `pre-mainnet.md`'s territory if
    A2U ever leaves testnet.
 3. Open questions — still unanswered after the Tier A/B/C build:
-   - Mainnet Horizon URL + network passphrase
+   - ~~Mainnet Horizon URL + network passphrase~~ **answered 2026-08-14 (v0.4)**:
+     `https://api.mainnet.minepi.com`, passphrase `Pi Network` — not the
+     "Pi Mainnet" the pattern predicts. See pi-sdk-notes.md, Layer 3.
    - Whether GET /payments requires the payment to belong to our app (Tier C).
      Half-answered 2026-07-31: it definitely *works* for a payment that does
      belong to us. Whether a foreign payment id is refused is still untested,

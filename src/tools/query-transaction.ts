@@ -2,7 +2,8 @@ import { z } from "zod";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 
 import { horizonGet } from "../horizon.js";
-import { fail, ok, transactionHash } from "./common.js";
+import type { PiNetwork } from "../networks.js";
+import { fail, networkNote, ok, transactionHash } from "./common.js";
 
 interface HorizonTransaction {
   hash: string;
@@ -35,7 +36,7 @@ const outputSchema = {
   result_code: z.string().optional(),
 };
 
-export function registerQueryTransaction(server: McpServer, network: string): void {
+export function registerQueryTransaction(server: McpServer, network: PiNetwork): void {
   server.registerTool(
     "query_transaction",
     {
@@ -45,7 +46,8 @@ export function registerQueryTransaction(server: McpServer, network: string): vo
         "which ledger it landed in, who submitted it, the fee charged, and its memo. " +
         "Call this to verify that a specific transaction actually went through — a user " +
         "or another service claiming a payment was made is not proof; this is. " +
-        "Reads public ledger data only.",
+        "Reads public ledger data only. " +
+        networkNote(network),
       inputSchema: { hash: transactionHash },
       outputSchema,
       annotations: { readOnlyHint: true, openWorldHint: true },
@@ -54,7 +56,7 @@ export function registerQueryTransaction(server: McpServer, network: string): vo
       try {
         const tx = await horizonGet<HorizonTransaction>(`/transactions/${hash.toLowerCase()}`);
         return ok({
-          network,
+          network: network.label,
           hash: tx.hash,
           successful: tx.successful,
           ledger: tx.ledger,

@@ -14,8 +14,10 @@ wallet address are replaced with placeholders. A uid identifies a real person
 within one app, and this repository is public. Transaction hashes and the *app*
 wallet are unredacted, so every claim stays independently verifiable.
 
-All four are **testnet observations**. We have not tested mainnet, and A2U is
-testnet-only per Pi's own `payments_advanced.md`.
+All four are **testnet observations** of the Platform API, and A2U is
+testnet-only per Pi's own `payments_advanced.md`, so there is no mainnet
+equivalent to compare them against. One mainnet measurement does now bear on
+finding 3 — the fee floor — and is noted there.
 
 ---
 
@@ -109,7 +111,14 @@ recipient, or a threshold that withholds payment until the accumulated balance
 justifies a transaction. A task board either prices work well above the floor or
 batches settlement; there is no third option.
 
-**Untested:** mainnet fee levels, and whether Pi offers any batching or
+**Mainnet is the same** (checked 2026-08-14). Both chains report a base fee of
+100,000 stroops, and a real mainnet transaction was charged exactly that. If
+anything mainnet is steadier: every `/fee_stats` percentile sat flat at the
+floor, while testnet showed p90 at 169,046. The arithmetic above therefore
+applies to real Pi, not just test Pi.
+
+**Still untested:** the fee on a mainnet *A2U* payment specifically — Pi does
+not currently permit those — and whether Pi offers any batching or
 payment-channel mechanism.
 
 ---

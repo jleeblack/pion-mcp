@@ -37,22 +37,6 @@ testnet-tolerant branch as conditional on this answer.
 
 ## P1 — answer before shipping A2U against mainnet
 
-### Mainnet Horizon URL and network passphrase
-
-Documented only for testnet (`api.testnet.minepi.com`, passphrase `Pi Testnet`).
-`checkPaymentsArming` refuses any Horizon URL without `testnet` in it, so this
-is currently a hard block by design rather than an oversight.
-
-### Do mainnet transaction fees differ from testnet's 0.01 Pi?
-
-Testnet charged **100,000 stroops (0.01 Pi)** per A2U transaction, flat and
-per-transaction (`tool-mapping.md`, design implication 2). That number sets the
-floor below which agent micropayments stop being rational, so the mainnet figure
-directly shapes what an agent economy on Pi can look like.
-
-Also unknown: whether Pi offers any fee-bumping, batching, or payment-channel
-mechanism that would let sub-floor exchanges settle economically.
-
 ### Is A2U available on mainnet at all?
 
 `payments_advanced.md` states A2U is "currently available only on the Testnet."
@@ -72,3 +56,27 @@ Browser — the difference between a general capability and a narrow one.
 - **Can a compromised app wallet be replaced?** Yes. Creation and selection are
   separate steps; selecting takes effect within seconds (2026-08-01). App
   wallets are not pinned.
+
+- **Mainnet Horizon URL and network passphrase** (2026-08-14, v0.4).
+  `https://api.mainnet.minepi.com`, passphrase **`Pi Network`** — *not*
+  "Pi Mainnet", which appears in Pi's own explorer only as UI copy. Full
+  evidence in `pi-sdk-notes.md`, Layer 3. Arming no longer depends on this being
+  unknown: it now requires the resolved network to *be* Pi Testnet, so mainnet
+  is refused by identity rather than by a URL substring that happened to fail.
+
+- **Do mainnet transaction fees differ from testnet's 0.01 Pi?** No. Both chains
+  report a base fee of **100,000 stroops (0.01 Pi)**, confirmed on a real
+  mainnet transaction. Mainnet showed no congestion spread; testnet did. The
+  fee-floor arithmetic in `FINDINGS.md` §3 carries over unchanged.
+
+  Still unknown: whether Pi offers fee-bumping, batching, or payment-channel
+  mechanisms that would let sub-floor exchanges settle economically — and the
+  fee on a mainnet *A2U* specifically, which Pi does not currently permit.
+
+- **Partial evidence on shared key derivation.** The P0 question above is not
+  closed, but there is now data: the same address can hold balances on both
+  chains simultaneously (`pi-sdk-notes.md`, Layer 3). That proves one public key
+  is registered on both, which is consistent with a shared derivation and points
+  the P0 answer toward "treat a testnet seed exposure as a mainnet exposure" —
+  but it does not establish the mechanism, so the policy branch in `runbook.md`
+  stays conditional.

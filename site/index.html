@@ -4,9 +4,9 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Pion — Model Context Protocol server for Pi Network</title>
-<meta name="description" content="Pion lets AI agents — Claude, Cursor, and any MCP-compatible client — query the Pi Network blockchain: wallet balances, payment history, and transaction verification. Read-only, zero keys, testnet-first.">
+<meta name="description" content="Pion lets AI agents — Claude, Cursor, and any MCP-compatible client — query the Pi Network blockchain: wallet balances, payment history, and transaction verification. Reads mainnet and testnet, zero keys; payments testnet-only.">
 <meta property="og:title" content="Pion — Model Context Protocol server for Pi Network">
-<meta property="og:description" content="Connect AI agents to the Pi blockchain. Read-only tools, no API keys, testnet-first.">
+<meta property="og:description" content="Connect AI agents to the Pi blockchain. Read-only tools, no API keys. Reads both networks; payments testnet-only.">
 <meta property="og:type" content="website">
 <meta property="og:url" content="https://pionmcp.com">
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -182,7 +182,7 @@
 <div class="page">
 
   <div class="masthead">
-    <span>pion-mcp · v0.3 · Pi Testnet</span>
+    <span>pion-mcp · v0.4 · reads Pi Mainnet + Testnet</span>
     <span><a href="https://github.com/jleeblack/pion-mcp">github</a> · <a href="https://www.npmjs.com/package/pion-mcp">npm</a></span>
   </div>
 
@@ -198,9 +198,11 @@
       Pion connects AI agents — Claude, Cursor, and any MCP-compatible client — to the
       Pi Network blockchain. Out of the box it exposes read-only tools for wallet
       balances, payment history, transaction verification, and identity: no API keys,
-      no wallet secrets, nothing that can move value. App-to-User payments exist behind
-      a four-condition arming gate, verified end to end on testnet and deliberately off
-      by default. It is a step toward agents that can transact on Pi safely, with humans
+      no wallet secrets, nothing that can move value. The chain reads run against
+      <b>either Pi network</b>, and every result names which one it came from.
+      App-to-User payments are a different matter: they exist behind a four-condition
+      arming gate, are <b>testnet-only</b> because Pi restricts them there, and are
+      deliberately off by default. It is a step toward agents that can transact on Pi safely, with humans
       holding the leash.
     </p>
   </div>
@@ -230,7 +232,7 @@
     <table>
       <thead><tr><th>Tool</th><th>What the agent gets</th></tr></thead>
       <tbody>
-        <tr><td><code>get_wallet_balance</code></td><td>Pi and token balances for any wallet address</td></tr>
+        <tr><td><code>get_wallet_balance</code></td><td>Pi and token balances for any wallet address — mainnet or testnet</td></tr>
         <tr><td><code>get_account_payments</code></td><td>Payment history for an account</td></tr>
         <tr><td><code>query_transaction</code></td><td>Details and verification of a specific transaction</td></tr>
         <tr><td><code>verify_user</code></td><td>Validates a Pi access token, returning uid and username</td></tr>
@@ -239,7 +241,9 @@
     </table>
     <p>
       Arming <code>send_payment</code> takes four separate acts: an explicit switch, a
-      mandatory per-payment ceiling, both credentials, and a testnet Horizon URL.
+      mandatory per-payment ceiling, both credentials, and Pi Testnet as the selected
+      network. Selecting mainnet does not merely discourage payments — it makes arming
+      impossible, and the server does not advertise a spending tool at all.
       Holding the credentials is deliberately not sufficient. The realistic failure mode
       is not a stolen key — it is an agent talked into spending by instructions sitting
       in data it just read, and the ceiling is what makes that bounded rather than fatal.
@@ -270,6 +274,10 @@
       <li class="done">v0.2 — <code>verify_user</code> identity checks via the Platform API</li>
       <li class="done">v0.3 — App-to-User payments proven end to end on testnet: created,
         signed, submitted, and confirmed on-chain independently of the tool's own report</li>
+      <li class="done">v0.4 — mainnet reads. Horizon URL and network passphrase verified
+        against the live nodes rather than assumed from the naming pattern — the mainnet
+        passphrase is <code>Pi Network</code>, not the <code>Pi Mainnet</code> the pattern
+        predicts. Payments remain testnet-only and unarmable elsewhere</li>
       <li class="now">Hardening <code>send_payment</code> before recommending it to anyone
         else — its failure paths were exercised deliberately, and the drill found a
         defect that would have lost funds</li>

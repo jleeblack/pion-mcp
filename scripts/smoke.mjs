@@ -1,16 +1,33 @@
 #!/usr/bin/env node
 /**
  * End-to-end smoke test: spawns the built server over stdio as a real MCP
- * client, lists its tools, and exercises all three against live Pi testnet
- * Horizon. Requires network access. Run with `npm run smoke`.
+ * client, lists its tools, and exercises all three against live Pi Horizon.
+ * Requires network access. Run with `npm run smoke`.
+ *
+ * Runs against whichever network the environment selects, so one set of checks
+ * covers both chains:
+ *
+ *   npm run smoke           # Pi Testnet (default)
+ *   npm run smoke:mainnet   # Pi Mainnet
  */
 import { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import { StdioClientTransport } from "@modelcontextprotocol/sdk/client/stdio.js";
 
-// A funded Pi testnet account: the network's root/friendbot-style account is
-// not stable across resets, so we discover a real account from the ledger.
-const HORIZON = process.env.PION_HORIZON_URL ?? "https://api.testnet.minepi.com";
+import { resolveNetwork } from "../dist/networks.js";
 
+// `--network=<id>` rather than an env var, so the npm script works the same on
+// Windows as it does in a POSIX shell. It just seeds PION_NETWORK, which is
+// what the spawned server actually reads.
+const flag = process.argv.find((arg) => arg.startsWith("--network="));
+if (flag) process.env.PION_NETWORK = flag.slice("--network=".length);
+
+// Resolved through the same code path the server uses, so fixtures are always
+// discovered from exactly the chain the server under test will read.
+const { network: NETWORK } = resolveNetwork(process.env);
+const HORIZON = NETWORK.horizonUrl;
+
+// Accounts are not stable across network resets and Pi publishes no fixed test
+// account, so a real one is discovered from the current ledger on each run.
 async function discoverFixtures() {
   const res = await fetch(`${HORIZON}/transactions?order=desc&limit=20`, {
     headers: { accept: "application/json" },
@@ -31,15 +48,27 @@ function summarize(label, result) {
 }
 
 const { address, hash } = await discoverFixtures();
-console.log(`Fixtures from ${HORIZON}:\n  address = ${address}\n  tx      = ${hash}`);
+console.log(
+  `Network: ${NETWORK.label} (${HORIZON})\n` +
+    `Fixtures:\n  address = ${address}\n  tx      = ${hash}`,
+);
 
 // Defaults to the local build; pass a path to test an installed copy instead,
 // e.g. `node scripts/smoke.mjs ../somewhere/node_modules/pion-mcp/dist/index.js`
-const entry = process.argv[2] ?? "dist/index.js";
+const entry = process.argv.slice(2).find((arg) => !arg.startsWith("--")) ?? "dist/index.js";
 console.log(`Server entry: ${entry}`);
 
 const client = new Client({ name: "pion-smoke", version: "0.1.0" });
-await client.connect(new StdioClientTransport({ command: process.execPath, args: [entry] }));
+// The SDK's default stdio environment is a filtered allow-list, so PION_NETWORK
+// must be passed through explicitly — otherwise the child always reads testnet
+// and a "mainnet" run would silently test the wrong chain.
+await client.connect(
+  new StdioClientTransport({
+    command: process.execPath,
+    args: [entry],
+    env: { ...process.env },
+  }),
+);
 
 const { tools } = await client.listTools();
 console.log(`\nTools advertised: ${tools.map((t) => t.name).join(", ")}`);
