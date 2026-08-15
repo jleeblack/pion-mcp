@@ -13,6 +13,8 @@
 
 import { z } from "zod";
 
+import { PI_TESTNET, type PiNetwork } from "./networks.js";
+
 /** Stellar amounts carry 7 decimal places; 1 Pi = 10^7 stroops. */
 const STROOPS_PER_PI = 10_000_000n;
 const AMOUNT_PATTERN = /^\d+(\.\d{1,7})?$/;
@@ -141,7 +143,7 @@ export function recordedAmountToStroops(amount: number): bigint {
  * Decides whether payments may run at all. Returns a specific reason on
  * refusal so an operator can tell a missing switch from a missing credential.
  */
-export function checkPaymentsArming(horizonUrl: string): PaymentsArming {
+export function checkPaymentsArming(network: PiNetwork): PaymentsArming {
   const enable = process.env.PION_ENABLE_PAYMENTS;
   if (enable !== "1" && enable?.toLowerCase() !== "true") {
     return {
@@ -152,12 +154,32 @@ export function checkPaymentsArming(horizonUrl: string): PaymentsArming {
 
   // A2U is testnet-only per Pi's payments_advanced.md. Refuse anything else
   // rather than discovering the restriction mid-flow with a created payment.
-  if (!horizonUrl.includes("testnet")) {
+  //
+  // Two conditions, deliberately. Until v0.4 this was a single substring test
+  // for "testnet" in the Horizon URL, which any string containing that word
+  // satisfied — https://api.mainnet.minepi.com/#testnet included. Arming now
+  // requires the resolved network to *be* Pi Testnet, and a custom endpoint
+  // resolves to `custom` however testnet-ish its URL looks.
+  if (!network.isTestnet) {
     return {
       armed: false,
       reason:
-        `Horizon is set to ${horizonUrl}, which is not testnet. Pi restricts ` +
-        "App-to-User payments to testnet, and Pion will not attempt them elsewhere.",
+        `the selected network is ${network.label} (${network.horizonUrl}), not Pi Testnet. ` +
+        "Pi restricts App-to-User payments to testnet, and Pion will not attempt them " +
+        "elsewhere. Payments cannot be armed while PION_NETWORK=mainnet or while " +
+        "PION_HORIZON_URL points at an endpoint Pion cannot identify.",
+    };
+  }
+
+  // Self-consistency assertion, not a second guess at the network. It cannot
+  // fire from any environment variable — only from someone editing the table in
+  // networks.ts so that `isTestnet` and the URL disagree.
+  if (network.horizonUrl !== PI_TESTNET.horizonUrl) {
+    return {
+      armed: false,
+      reason:
+        `network table inconsistency: a network marked testnet points at ` +
+        `${network.horizonUrl}, not ${PI_TESTNET.horizonUrl}. Refusing to arm.`,
     };
   }
 

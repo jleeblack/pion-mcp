@@ -449,3 +449,81 @@ could not be parsed; find the record with `npm run incomplete`.
 the id validation, the status mapping, and the rule that completion is reported
 only on a 200. No real API contact, fake key. Run it before deploying a change
 to either function.
+
+---
+
+## Mainnet reads — the v0.4 validation gate
+
+Mainnet reads shipped only after the same discipline the send drills used: the
+tool's own report is not evidence, and three independent sources had to agree.
+
+Run `npm run smoke:mainnet` and `npm run crossnet` after any change touching
+`src/networks.ts`, `src/horizon.ts`, or the arming check.
+
+### What was verified, 2026-08-14
+
+**Network identity, from primary sources rather than the naming pattern.** Each
+Horizon node reports its own `network_passphrase`; Pi's production explorer
+bundle carries the mainnet URL as build config. Mainnet is
+`https://api.mainnet.minepi.com`, passphrase **`Pi Network`**. The pattern-guess
+`Pi Mainnet` is wrong and appears in Pi's own explorer as UI copy, which is the
+kind of false corroboration worth naming out loud. Details and the third check
+in `pi-sdk-notes.md`, Layer 3.
+
+**A mainnet read, agreeing three ways.** Account
+`GCZYTVXS2K7DY3LJ6F3P5CVH3OU4ZGUKAXAUTE3K7NZGNH55ONISQCMB`, discovered from the
+live ledger rather than hand-picked:
+
+| | via `get_wallet_balance` | via raw Horizon |
+|---|---|---|
+| balance | `2.0600000` PI | `2.0600000` |
+| sequence | `107166829968883735` | `107166829968883735` |
+| last_modified_ledger | `28210699` | `28210699` |
+
+And an immutable transaction, `f8b6d6c83dfb32452330b677d901748fb6cece6c36d9b2deff64bead6e1c6925`
+at ledger 28210699 — `successful: true`, `fee_charged: 100000`, memo_type `text`,
+memo `PML-Trq5irLcr0dsUap1N6gwZCZz` — identical through both paths.
+
+**Third source — human eyes on the explorer. Done 2026-08-14; gate closed.**
+Field *values* must be compared, not merely that a page renders: the explorer is
+a client-side app that returns HTTP 200 for everything, including nonsense, so a
+status check proves nothing.
+
+```
+https://blockexplorer.minepi.com/mainnet/tx/f8b6d6c83dfb32452330b677d901748fb6cece6c36d9b2deff64bead6e1c6925
+https://blockexplorer.minepi.com/mainnet/account/GCZYTVXS2K7DY3LJ6F3P5CVH3OU4ZGUKAXAUTE3K7NZGNH55ONISQCMB
+```
+
+The transaction is the better anchor of the two — it is immutable, where the
+balance drifts. Confirmed by eye against the transaction page: **fee 0.01 π,
+ledger 28210699, memo `PML-Trq5irLcr0dsUap1N6gwZCZz`** — all three matching the
+tool report and raw Horizon exactly. Three independent sources agree.
+
+*One nuance recorded so the next reader does not over-read this entry.* The
+explorer page renders the transaction's `create_claimable_balance` operation
+rather than an error state, which is consistent with success but is not by
+itself proof of it — Stellar explorers list the operations of failed
+transactions too, marking the failure elsewhere on the page. `successful: true`
+is attested by the tool report and raw Horizon, which agree; the explorer's
+contribution to this gate is the three field values above. That is enough, and
+saying which source proved which is the point of keeping the record.
+
+**Arming, under the worst configuration available.** With every payment
+credential present and correct and `PION_NETWORK=mainnet`: the server starts,
+serves all three read tools, and does not advertise `send_payment` at all.
+Covered permanently by `npm run arming`.
+
+### The assumption that turned out to be false
+
+The first version of `crossnet` asserted that an account funded on one chain is
+absent from the other. It is not. The same address held **2.0600000 Pi on
+mainnet and 32.2993800 Pi on testnet at the same moment**, with different
+sequence numbers; across six sampled mainnet accounts, three also existed on
+testnet.
+
+The consequence is the reason the network is stamped on every result rather than
+announced once at startup: **a read against the wrong chain does not reliably
+fail.** It can return a well-formed, plausible, wrong number — the same shape of
+silent wrong answer as `FINDINGS.md` §4. `crossnet` was rewritten to assert what
+actually holds: a wallet we control is testnet-only, and a shared address must
+return *different* ledger state from each chain.

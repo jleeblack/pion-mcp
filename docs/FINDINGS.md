@@ -1,7 +1,8 @@
-# Four undocumented Pi Platform API behaviours
+# Five undocumented Pi Network behaviours
 
 Found while building [Pion](https://github.com/jleeblack/pion-mcp), an MCP server
-for Pi Network, against `api.minepi.com/v2` on **Pi Testnet**, July–August 2026.
+for Pi Network, against the Platform API (`api.minepi.com/v2`) and Pi's public
+Horizon nodes, July–August 2026.
 
 Each finding below is stated with the verbatim response that produced it, so you
 can check the claim rather than take our word for it. Where a transaction is
@@ -14,8 +15,32 @@ wallet address are replaced with placeholders. A uid identifies a real person
 within one app, and this repository is public. Transaction hashes and the *app*
 wallet are unredacted, so every claim stays independently verifiable.
 
-All four are **testnet observations**. We have not tested mainnet, and A2U is
-testnet-only per Pi's own `payments_advanced.md`.
+## The two that matter most
+
+Findings 1–3 are things that **fail**, and a thing that fails teaches you about
+itself. Findings **4 and 5 are a different and worse category: they answer.**
+
+- A payment record reports `transaction: null` whether the money moved or not.
+- A wallet address returns a balance from whichever chain you asked, and the
+  same address can hold a different balance on each.
+
+Neither raises an error. Neither looks unusual. In both cases the wrong answer
+is well-formed, plausible, and indistinguishable from the right one at the point
+you receive it — which means no amount of checking *the response* catches it.
+Only an independent source does. That is the shared hazard, and it is why both
+findings end with a specific external check rather than advice to validate more
+carefully.
+
+If you read only two sections here, read those.
+
+## Scope
+
+Findings 1, 2 and 4 are **testnet observations of the Platform API**. A2U is
+testnet-only per Pi's own `payments_advanced.md`, so there is no mainnet
+equivalent to compare them against.
+
+Findings 3 and 5 have been **checked on both chains**, since Horizon reads are
+open on mainnet as well as testnet.
 
 ---
 
@@ -109,7 +134,14 @@ recipient, or a threshold that withholds payment until the accumulated balance
 justifies a transaction. A task board either prices work well above the floor or
 batches settlement; there is no third option.
 
-**Untested:** mainnet fee levels, and whether Pi offers any batching or
+**Mainnet is the same** (checked 2026-08-14). Both chains report a base fee of
+100,000 stroops, and a real mainnet transaction was charged exactly that. If
+anything mainnet is steadier: every `/fee_stats` percentile sat flat at the
+floor, while testnet showed p90 at 169,046. The arithmetic above therefore
+applies to real Pi, not just test Pi.
+
+**Still untested:** the fee on a mainnet *A2U* payment specifically — Pi does
+not currently permit those — and whether Pi offers any batching or
 payment-channel mechanism.
 
 ---
@@ -209,6 +241,62 @@ Two edges worth building in:
 - **Inconclusive is not "no."** Horizon unreachable, a non-200, or a truncated
   search should refuse to cancel rather than assume. An unnecessary refusal
   leaves a record listed; a wrong cancel loses funds.
+
+---
+
+## 5. The same address holds different balances on Mainnet and Testnet
+
+**This is finding 4's hazard, one layer down.** Query the wrong chain and you
+are not told. You are answered.
+
+Pi Mainnet and Pi Testnet are separate ledgers that share Stellar's address
+format. The intuition that follows — *if I query the wrong network I will get a
+not-found* — is false. Measured 2026-08-14, the same address, at the same
+moment, on both chains:
+
+```
+GCZYTVXS2K7DY3LJ6F3P5CVH3OU4ZGUKAXAUTE3K7NZGNH55ONISQCMB
+
+  api.mainnet.minepi.com   balance  2.0600000 PI   sequence 107166829968883735
+  api.testnet.minepi.com   balance 32.2993800 PI   sequence  45199857865982412
+```
+
+Both responses are HTTP 200. Both are well-formed. Neither names a network
+anywhere in its body. Sampling six accounts drawn from recent mainnet ledgers,
+**three also existed on testnet and three returned 404** — so co-existence is
+common but not reliable, which is the worst of both worlds: too common to be an
+edge case, too unreliable to use as a signal.
+
+**Why it is easy to miss.** Absence *feels* like a safety net. A developer who
+points a client at the wrong Horizon expects the mistake to announce itself as a
+wall of 404s, and if the first address they test happens to be one of the
+testnet-only ones, it does — which teaches exactly the wrong lesson before the
+first address that exists on both silently returns 32 Pi where 2 Pi was true.
+Testnet Pi is worthless and mainnet Pi is not, so the error runs in the
+expensive direction.
+
+**Handling.** The network is not derivable from the response, so it has to be
+carried alongside it. Two things follow, and they are cheap:
+
+- **Resolve the network once**, in one place, and let the Horizon client, the
+  logs, and every result read that single value. Deriving it independently in
+  two places — say, by testing whether the URL contains `"testnet"` — is how a
+  configuration ends up testnet by one check and mainnet by another.
+- **Label every result, not just startup.** Anyone reading a balance an hour
+  into a session never saw the banner.
+
+**Verifying it yourself.** Do not test with an address that exists on only one
+chain — that is the case which passes for the wrong reason. Take an address
+present on both and confirm the two chains return *different* ledger state.
+Same address, two answers, is a positive proof the chains are distinguished; a
+404 elsewhere proves only that one address is missing from one chain.
+
+The same round of mainnet checks also settled finding 3's open question about
+fee levels; the answer is recorded there.
+
+**Not claimed.** That Pi derives one keypair per passphrase across both
+networks. Co-existence proves the same *public key* is registered on both
+chains; it does not establish the mechanism, and we have not tested it.
 
 ---
 

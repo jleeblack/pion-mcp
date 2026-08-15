@@ -5,11 +5,18 @@
  * bearer token, no wallet secret. See docs/pi-sdk-notes.md, "Layer 3".
  */
 
-const DEFAULT_HORIZON_URL = "https://api.testnet.minepi.com";
+import { NETWORK } from "./networks.js";
+
 const REQUEST_TIMEOUT_MS = 15_000;
 
-/** Horizon base URL. Defaults to Pi testnet; override with PION_HORIZON_URL. */
-export const HORIZON_URL = (process.env.PION_HORIZON_URL ?? DEFAULT_HORIZON_URL).replace(/\/+$/, "");
+/**
+ * Horizon base URL for the selected network.
+ *
+ * Derived from the resolved network rather than read from the environment
+ * directly, so there is exactly one place that decides which chain we are on.
+ * `PION_NETWORK` and `PION_HORIZON_URL` are both handled in networks.ts.
+ */
+export const HORIZON_URL = NETWORK.horizonUrl;
 
 /** A Horizon request that failed — network, timeout, or non-2xx response. */
 export class HorizonError extends Error {
@@ -71,7 +78,17 @@ async function describeFailure(response: Response, path: string): Promise<string
   }
 
   if (response.status === 404) {
-    return `Not found on Horizon (${HORIZON_URL}${path}). The account or transaction does not exist on this network, or has never been funded.`;
+    // Name the network. A common cause of a surprising 404 is looking for an
+    // account on the chain it does not live on, and that is invisible unless
+    // said. Note the asymmetry: a 404 is evidence the address is absent *here*,
+    // but a success is not evidence you asked the right chain — some addresses
+    // exist on both with different balances (docs/FINDINGS.md, finding 5).
+    return (
+      `Not found on ${NETWORK.label} Horizon (${HORIZON_URL}${path}). The account or ` +
+      `transaction does not exist on ${NETWORK.label}, or has never been funded. ` +
+      "Pi Mainnet and Pi Testnet are separate ledgers sharing one address format, so " +
+      "this address may still be real on the other chain."
+    );
   }
 
   const parts = [problem.title, problem.detail, problem.extras?.reason].filter(Boolean);

@@ -14,7 +14,23 @@ import {
 import { ok } from "./common.js";
 import type { CallToolResult } from "@modelcontextprotocol/sdk/types.js";
 
-/** Pi testnet's Stellar network passphrase (docs/pi-sdk-notes.md, Layer 3). */
+/**
+ * Pi testnet's Stellar network passphrase (docs/pi-sdk-notes.md, Layer 3).
+ *
+ * Hardcoded on purpose, and deliberately NOT read from the resolved network in
+ * networks.ts even though that object now carries a passphrase for each chain.
+ *
+ * This is the last barrier. Arming already refuses anything but Pi Testnet, so
+ * this constant should be unreachable on another chain — but "should be
+ * unreachable" is a claim about code that can be wrong. A passphrase is hashed
+ * into every signature, so a transaction signed with "Pi Testnet" is rejected
+ * outright by Pi Mainnet rather than moving funds on it. Wiring this to the
+ * network table would turn a bug in the arming logic from a rejected
+ * transaction into a real mainnet spend.
+ *
+ * The cost of keeping it fixed is that mainnet A2U would need a deliberate edit
+ * here. That is the intended cost, and Pi does not permit mainnet A2U anyway.
+ */
 const NETWORK_PASSPHRASE = "Pi Testnet";
 
 /** Stellar text memos are capped at 28 bytes. */

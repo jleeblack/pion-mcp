@@ -2,7 +2,32 @@ import { z } from "zod";
 import type { CallToolResult } from "@modelcontextprotocol/sdk/types.js";
 
 import { HorizonError } from "../horizon.js";
+import type { PiNetwork } from "../networks.js";
 import { PlatformError } from "../platform.js";
+
+/**
+ * The sentence every Tier A tool description ends with.
+ *
+ * Named once so all three read tools say the same thing about the same fact.
+ * An agent that only ever sees a tool description — never the startup banner —
+ * still learns which chain it is reading and why that matters.
+ *
+ * The wording is deliberate about what a wrong-chain read looks like. Measured
+ * 2026-08-14: some Pi addresses hold a balance on *both* chains, with different
+ * amounts (docs/FINDINGS.md, finding 5). So querying the wrong network does not
+ * reliably produce a not-found error — it can produce a well-formed, plausible,
+ * wrong number. That is why the network is stated rather than implied.
+ */
+export function networkNote(network: PiNetwork): string {
+  return (
+    `This server reads ${network.label}, and every result repeats that in its ` +
+    '"network" field — always report which chain a figure came from. Pi Mainnet ' +
+    "and Pi Testnet are separate ledgers sharing one address format, and the same " +
+    "address can hold different balances on each, so a result from the wrong chain " +
+    "looks entirely normal. Testnet Pi has no monetary value: never present a " +
+    "testnet balance as real holdings."
+  );
+}
 
 /** Stellar/Pi public key: 56 base32 characters beginning with G. */
 export const walletAddress = z

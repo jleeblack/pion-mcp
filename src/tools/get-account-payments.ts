@@ -2,7 +2,16 @@ import { z } from "zod";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 
 import { cursorFromLink, formatAsset, horizonGet } from "../horizon.js";
-import { fail, ok, pagingCursor, pagingLimit, pagingOrder, walletAddress } from "./common.js";
+import type { PiNetwork } from "../networks.js";
+import {
+  fail,
+  networkNote,
+  ok,
+  pagingCursor,
+  pagingLimit,
+  pagingOrder,
+  walletAddress,
+} from "./common.js";
 
 /**
  * Horizon's payments endpoint returns several operation types. Fields are
@@ -109,7 +118,7 @@ function normalize(record: HorizonPayment): z.infer<typeof paymentShape> {
   }
 }
 
-export function registerGetAccountPayments(server: McpServer, network: string): void {
+export function registerGetAccountPayments(server: McpServer, network: PiNetwork): void {
   server.registerTool(
     "get_account_payments",
     {
@@ -120,7 +129,8 @@ export function registerGetAccountPayments(server: McpServer, network: string): 
         "a payment arrived, who funded an account, or what it recently sent. Covers " +
         "payments, account creations, path payments, and account merges. Results are " +
         "paginated: pass the returned `next_cursor` back as `cursor` for the next page. " +
-        "Reads public ledger data only.",
+        "Reads public ledger data only. " +
+        networkNote(network),
       inputSchema: {
         address: walletAddress,
         limit: pagingLimit,
@@ -144,7 +154,7 @@ export function registerGetAccountPayments(server: McpServer, network: string): 
           payments.length === limit ? cursorFromLink(page._links?.next?.href) : undefined;
 
         return ok({
-          network,
+          network: network.label,
           account_id: address,
           count: payments.length,
           ...(nextCursor !== undefined ? { next_cursor: nextCursor } : {}),
