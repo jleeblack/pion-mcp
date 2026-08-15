@@ -527,3 +527,47 @@ fail.** It can return a well-formed, plausible, wrong number — the same shape 
 silent wrong answer as `FINDINGS.md` §4. `crossnet` was rewritten to assert what
 actually holds: a wallet we control is testnet-only, and a shared address must
 return *different* ledger state from each chain.
+
+---
+
+## Release procedure
+
+Verified through the 0.4.0 publish. Two rules below were learned by breaking
+them in that release, not by foresight.
+
+### Gates must be pasted one at a time
+
+**A gate inside a pasted block is decoration.** In the 0.4.0 release the whole
+gated checklist went into the terminal as a single block. `npm whoami` failed —
+not logged in — and the sequence carried on regardless: every later gate ran,
+and `git push origin v0.4.0` completed *before* `npm publish` had succeeded.
+The tag briefly pointed at a version that did not exist on the registry.
+
+The recovery was clean only by luck: `npm login` then `npm publish` landed on
+the same commit the tag already named, so the tag ended up correct. Had the
+publish needed a code change, the pushed tag would have been wrong and would
+have needed a force-update — the one operation on a published tag that breaks
+anyone who already fetched it.
+
+So: **one paste per gate, read the output, then paste the next.** A shell does
+not stop a `;`-joined or newline-pasted sequence when one command fails, which
+means a checklist's ordering guarantees exist only if a human enforces them
+between pastes. This is the same principle as the send drills — a check whose
+failure does not halt the next irreversible step is not a check.
+
+Corollary: `git push <tag>` is a gate of its own and belongs strictly *after*
+publish returns success. Creating the tag locally beforehand is fine; pushing
+it is the irreversible half.
+
+### The version bump includes the lockfile
+
+`package-lock.json` carries the version twice, at `.version` and
+`.packages."".version`. Editing `package.json` alone leaves it stale, and
+nothing in the build, the test suites, or `npm pack` notices — the lockfile is
+not published (`files: ["dist"]`), so the tarball is correct either way and the
+discrepancy survives into the repo.
+
+In 0.4.0 it was caught only because an incidental `npm install` synced it and
+left an unexplained modified file in the tree afterwards. Bump both together, or
+run `npm install --package-lock-only` right after editing the version so the
+lockfile moves in the same commit.
