@@ -50,6 +50,9 @@ export function registerGetWalletBalance(server: McpServer, network: PiNetwork):
         "Call this whenever you need to know how much Pi an address holds, whether it " +
         "holds a particular token, or whether the account exists on-chain at all. " +
         "Reads public ledger data only — it cannot move funds and needs no credentials. " +
+        "An address that has never been funded on this chain is not an account there: the " +
+        "call returns a not-found error rather than a zero balance, so 'absent' and " +
+        "'holds nothing' stay distinguishable. " +
         networkNote(network),
       inputSchema: { address: walletAddress },
       outputSchema,

@@ -129,7 +129,9 @@ export function registerGetAccountPayments(server: McpServer, network: PiNetwork
         "a payment arrived, who funded an account, or what it recently sent. Covers " +
         "payments, account creations, path payments, and account merges. Results are " +
         "paginated: pass the returned `next_cursor` back as `cursor` for the next page. " +
-        "Reads public ledger data only. " +
+        "Reads public ledger data only. An address never funded on this chain returns a " +
+        "not-found error rather than an empty list, so an empty `payments` array means " +
+        "you have paged past the end of the history — not that the account is unused. " +
         networkNote(network),
       inputSchema: {
         address: walletAddress,

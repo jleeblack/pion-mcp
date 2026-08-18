@@ -571,3 +571,62 @@ In 0.4.0 it was caught only because an incidental `npm install` synced it and
 left an unexplained modified file in the tree afterwards. Bump both together, or
 run `npm install --package-lock-only` right after editing the version so the
 lockfile moves in the same commit.
+
+---
+
+## Directory listings — Glama
+
+Listing: `https://glama.ai/mcp/servers/@jleeblack/pion-mcp`, claimed 2026-08-17.
+
+### What Glama reads, and from where
+
+Two different sources, and confusing them wastes a release:
+
+- **Tool and parameter schemas come from the live server.** Glama builds the
+  repo in a microVM and performs a real `tools/list` / `resources/list` /
+  `prompts/list` exchange, capturing the JSON Schema it gets back. So every
+  `.describe()` in `src/tools/` is published verbatim, and the way to change
+  what the listing says about a tool is to change the schema — there is no
+  listing-side copy to edit.
+- **The environment-variable table is scraped from `README.md`.** Not from
+  `--help`, not from the code. Verified 2026-08-17: the listing's table
+  reproduced the pre-0.4.0 README table exactly, row for row, including
+  `PION_HORIZON_URL`'s old default of `https://api.testnet.minepi.com` — the
+  wording that commit `c4523ce` replaced with "derived from `PION_NETWORK`".
+  `PION_NETWORK` was absent from the listing because it was absent from the
+  README when the snapshot was taken.
+
+So the README's env table is a **published interface**, not just internal
+documentation. It is the only artifact that decides what integrators see under
+"configuration" on the directory page.
+
+### Re-indexing
+
+There is no button to press and none is needed. Glama re-runs the whole
+pipeline on **every new commit**, and states the registry reflects the
+repository within minutes of a push. A stale listing means nothing has been
+pushed since the snapshot — it does not mean a refresh has to be requested.
+
+### `glama.json` is not a configuration file
+
+Its schema (`https://glama.ai/mcp/schemas/server.json`) defines exactly one
+property: `maintainers`, an array of GitHub usernames. It is the ownership
+claim and nothing more. It cannot declare environment variables, tools, or
+metadata, so there is no listing manifest in this repo to keep in sync.
+
+### The score that drives description work
+
+Glama publishes a Tool Definition Quality Score over six dimensions, each 1–5.
+The one worth watching is **Parameter Semantics** — *"are parameter names,
+types, and constraints specified unambiguously?"*
+
+Measured 2026-08-17, before 0.4.1: Purpose, Conciseness and Completeness were
+5/5 on all four tools, while Parameter Semantics was 3/5 on `get_wallet_balance`
+and `query_transaction` and 4/5 on `get_account_payments` and `verify_user`.
+The split is legible: the two tools scoring 3 were the two whose *only*
+parameter used a bare one-line `.describe()` stating what the value is. The
+tools scoring 4 had parameters that also stated ranges, defaults, and
+provenance. The dimension is rewarding stated **constraints**, not prose
+quality — which is why 0.4.1 moved the alphabet, the length, the case rule, and
+a worked example into the descriptions themselves rather than leaving them
+implicit in the regex.

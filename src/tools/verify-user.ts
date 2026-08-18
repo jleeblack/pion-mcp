@@ -39,17 +39,24 @@ export function registerVerifyUser(server: McpServer): void {
         "Check whether a Pi user access token is genuine and, if so, who it belongs to. " +
         "Call this to authenticate someone who claims a Pi identity — never trust a " +
         "client-supplied uid or username on its own; this is the only thing that proves it. " +
-        "Returns `valid: false` with a reason for a rejected token rather than failing. " +
+        "An invalid, expired, or wrong-app token returns `valid: false` with a reason " +
+        "rather than failing; only a transport or server fault is reported as an error. " +
         `Sends the token to the Pi Platform API (${PLATFORM_URL}/v2/me) and nothing else; ` +
         "it is not stored or logged. Note the uid is app-specific — the same person has a " +
-        "different uid under a different Pi app.",
+        "different uid under a different Pi app. Unlike this server's ledger reads, this " +
+        "is an identity check against the Platform API rather than a chain query, so the " +
+        "result carries no `network` field and does not depend on which Pi chain is " +
+        "being read.",
       inputSchema: {
         access_token: z
           .string()
           .min(1)
           .describe(
-            "The user's Pi access token, obtained from Pi Browser authentication or Pi " +
-              "Sign-in OAuth. This is a credential — pass the token itself, not a uid.",
+            "The user's Pi access token: an opaque bearer credential with no fixed " +
+              "length or prefix, obtained from Pi Browser authentication " +
+              "(`Pi.authenticate`) or Pi Sign-in OAuth. Pass the token string itself — " +
+              "not a uid, not a username, and not the app's server API key, which is a " +
+              "different credential this tool never accepts.",
           ),
       },
       outputSchema,
