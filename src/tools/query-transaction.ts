@@ -46,7 +46,9 @@ export function registerQueryTransaction(server: McpServer, network: PiNetwork):
         "which ledger it landed in, who submitted it, the fee charged, and its memo. " +
         "Call this to verify that a specific transaction actually went through — a user " +
         "or another service claiming a payment was made is not proof; this is. " +
-        "Reads public ledger data only. " +
+        "Reads public ledger data only. A hash this chain has no record of returns a " +
+        "not-found error, which is not the same answer as `successful: false` — that " +
+        "means the transaction did reach a ledger and was rejected there. " +
         networkNote(network),
       inputSchema: { hash: transactionHash },
       outputSchema,

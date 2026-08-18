@@ -29,20 +29,59 @@ export function networkNote(network: PiNetwork): string {
   );
 }
 
-/** Stellar/Pi public key: 56 base32 characters beginning with G. */
+/**
+ * Stellar/Pi public key: 56 base32 characters beginning with G.
+ *
+ * The description states the alphabet, not just the length, because base32
+ * excludes 0/1/8/9 — the characters a human is most likely to introduce when
+ * retyping an address. It also carries an example, and a warning against
+ * reusing it: the regex here proves the *shape*, and nothing more. A different
+ * well-formed address is not rejected, it is answered, so a copied example
+ * returns a real balance belonging to someone else. That is the same silent
+ * wrong answer the network stamp exists to prevent (see `networkNote`).
+ *
+ * Note the checksum is deliberately not verified here. Strkey carries a CRC16
+ * that this regex cannot see, so a mistyped-but-well-formed address reaches
+ * Horizon and comes back as a 400 rather than a local validation error.
+ */
 export const walletAddress = z
   .string()
   .regex(
     /^G[A-Z2-7]{55}$/,
-    "must be a 56-character Pi wallet address starting with G (e.g. GABC...XYZ)",
+    "must be a Pi wallet address: exactly 56 characters, starting with G, the rest " +
+      "base32 (A-Z and 2-7 only — never 0, 1, 8 or 9)",
   )
-  .describe("Pi wallet address (Stellar public key, 56 characters, starts with G)");
+  .describe(
+    "Pi wallet address (a Stellar public key): exactly 56 upper-case characters, " +
+      "starting with G, the rest base32 — A-Z and 2-7 only, never 0, 1, 8 or 9. " +
+      "Example: GATQBZLIAUVMND2OCPOKWGPUCNXIGKMNUU7E67YQI2MODSMCMLXBAIJA — that is a " +
+      "format sample, not a default. Pass the address you were actually given: a valid " +
+      "address that is not the intended one returns someone else's balance, not an error.",
+  );
 
-/** Stellar transaction hash: 64 hex characters. */
+/**
+ * Stellar transaction hash: 64 hex characters.
+ *
+ * Either case is accepted and `query_transaction` lowercases before the request,
+ * so the description says so rather than implying lower-case-only input.
+ *
+ * The "not a payment id" clause is load-bearing. Pi's A2U flow hands out a
+ * payment identifier and a txid that are different things at different layers
+ * (docs/runbook.md), and an agent holding one of them has no format cue telling
+ * it which endpoint wants which.
+ */
 export const transactionHash = z
   .string()
-  .regex(/^[0-9a-fA-F]{64}$/, "must be a 64-character hex transaction hash")
-  .describe("Transaction hash (64 hex characters)");
+  .regex(
+    /^[0-9a-fA-F]{64}$/,
+    "must be a transaction hash: exactly 64 hexadecimal characters (0-9 and a-f)",
+  )
+  .describe(
+    "On-chain transaction hash: exactly 64 hexadecimal characters (0-9 and a-f). " +
+      "Upper case is accepted and normalized to lower case. This is the Stellar " +
+      "transaction hash — not a Pi payment id, not a ledger sequence number, not a memo. " +
+      "Example: f8b6d6c83dfb32452330b677d901748fb6cece6c36d9b2deff64bead6e1c6925",
+  );
 
 export const pagingLimit = z
   .number()
