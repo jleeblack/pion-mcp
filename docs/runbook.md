@@ -632,34 +632,67 @@ between verification and publish. Do not tag — find out what moved.
 
 Listing: `https://glama.ai/mcp/servers/@jleeblack/pion-mcp`, claimed 2026-08-17.
 
-### What Glama reads, and from where
+### Read the API, never the page
 
-Two different sources, and confusing them wastes a release:
+**The listing page renders our own `README.md` alongside Glama's stored
+metadata, and the two disagree.** Anything that reads the page — a human
+skimming, or a fetch-and-summarise tool — can lift the current env table out of
+the embedded README and report it as the listing's configuration, while the
+actual Server Configuration widget still shows something years older in spirit.
+That mistake was made in this repo on 2026-08-17 and produced a confident,
+wrong "the listing is already current."
 
-- **Tool and parameter schemas come from the live server.** Glama builds the
-  repo in a microVM and performs a real `tools/list` / `resources/list` /
-  `prompts/list` exchange, capturing the JSON Schema it gets back. So every
-  `.describe()` in `src/tools/` is published verbatim, and the way to change
-  what the listing says about a tool is to change the schema — there is no
-  listing-side copy to edit.
-- **The environment-variable table is scraped from `README.md`.** Not from
-  `--help`, not from the code. Verified 2026-08-17: the listing's table
-  reproduced the pre-0.4.0 README table exactly, row for row, including
-  `PION_HORIZON_URL`'s old default of `https://api.testnet.minepi.com` — the
-  wording that commit `c4523ce` replaced with "derived from `PION_NETWORK`".
-  `PION_NETWORK` was absent from the listing because it was absent from the
-  README when the snapshot was taken.
+The machine-readable record is the only safe source:
 
-So the README's env table is a **published interface**, not just internal
-documentation. It is the only artifact that decides what integrators see under
-"configuration" on the directory page.
+```
+https://glama.ai/api/mcp/v1/servers/jleeblack/pion-mcp
+```
 
-### Re-indexing
+It returns the stored `environmentVariablesJsonSchema`, `description`,
+`attributes`, and `tools` — what Glama actually believes, with no README
+rendered next to it.
 
-There is no button to press and none is needed. Glama re-runs the whole
-pipeline on **every new commit**, and states the registry reflects the
-repository within minutes of a push. A stale listing means nothing has been
-pushed since the snapshot — it does not mean a refresh has to be requested.
+### What Glama stores, and how it got there
+
+- **The environment variables are a stored, AI-inferred JSON Schema.** Not
+  scraped from `README.md`, not from `--help`, not from the code — a
+  `environmentVariablesJsonSchema` field frozen on the server record. The tell
+  is the wording: `PION_ENABLE_PAYMENTS` reads *"Arms the send_payment tool.
+  Must be set to '1' to enable payments. Off by default."*, a sentence that
+  appears nowhere in this repo. It was generated from an early snapshot and has
+  not moved since. **Editing the README does not fix it.**
+- **Tool and parameter schemas come from the live server** — Glama's documented
+  method is a real `tools/list` exchange against a build in a microVM, so every
+  `.describe()` in `src/tools/` would be published verbatim. That is the
+  mechanism; see the measurement below for whether it re-runs.
+- **The one-line server description and `attributes` are inferred too**, and can
+  be wrong: the record tags Pion `hosting:remote-capable`, which is false for a
+  stdio-only server.
+
+### Re-indexing does not demonstrably follow a push
+
+Glama's methodology states every new commit triggers a full re-run and the
+registry reflects the repository within minutes. **Measured 2026-08-18: it did
+not.** Across four merged PRs and two npm publishes (0.4.1 and 0.4.2), nothing
+moved — the env schema still lacked `PION_NETWORK`, and every parameter
+description on the listing was still the 0.4.0 text, verbatim:
+
+| Shown on the listing | Actual since 0.4.1 |
+|---|---|
+| `Pi wallet address (Stellar public key, 56 characters, starts with G)` | full alphabet, case rule, worked example |
+| `Transaction hash (64 hex characters)` | case handling, not-a-payment-id, worked example |
+
+The scores were unchanged for the same reason, and that is the trap worth
+naming: **an unchanged score after a description rewrite reads as "the rewrite
+did not help" when it actually means "the rewrite was never seen."** Confirm
+the listing is scoring current text — quote a parameter string back — before
+drawing any conclusion about whether a change worked.
+
+So treat the listing as pull-on-request, not push-driven. The levers are the
+claim flow and whatever the maintainer dashboard exposes directly; the
+`tools: []` in the API alongside tools rendered on the page suggests the stored
+record is only partially populated, which is worth a look if a refresh keeps
+not arriving.
 
 ### `glama.json` is not a configuration file
 
@@ -684,3 +717,10 @@ provenance. The dimension is rewarding stated **constraints**, not prose
 quality — which is why 0.4.1 moved the alphabet, the length, the case rule, and
 a worked example into the descriptions themselves rather than leaving them
 implicit in the regex.
+
+**Whether that worked is still unmeasured.** Re-checked 2026-08-18, after both
+releases: identical scores — 4.3 / 4.3 / 4.5 / 4.9, Parameter Semantics still
+3, 3, 4, 4. Not a result, because the listing was still scoring the 0.4.0
+strings (see "Re-indexing" above). The reading above remains a hypothesis about
+what the dimension rewards, and stays one until a re-index is confirmed to have
+picked up the current text.
