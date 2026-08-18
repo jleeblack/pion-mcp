@@ -532,8 +532,8 @@ return *different* ledger state from each chain.
 
 ## Release procedure
 
-Verified through the 0.4.0 publish. Two rules below were learned by breaking
-them in that release, not by foresight.
+Verified through the 0.4.0 and 0.4.1 publishes. Every rule below was learned by
+breaking it in one of those releases, not by foresight.
 
 ### Gates must be pasted one at a time
 
@@ -571,6 +571,60 @@ In 0.4.0 it was caught only because an incidental `npm install` synced it and
 left an unexplained modified file in the tree afterwards. Bump both together, or
 run `npm install --package-lock-only` right after editing the version so the
 lockfile moves in the same commit.
+
+### The browser handshake is not the success signal
+
+With 2FA on the account, `npm publish` prints an auth URL and **blocks waiting
+for approval**. The approval is not the publish: the tarball uploads only after
+the still-running process receives the token back. So the command has to be
+alive when you approve, and a publish that has already exited cannot be
+completed by approving its link afterwards.
+
+In 0.4.1 a first `npm publish` exited on `EOTP` before the link was opened.
+Approving it later published nothing — while the browser reported success,
+which is the wrong reassurance at the worst moment. The only success signal is
+the terminal line:
+
+```
++ pion-mcp@0.4.1
+```
+
+Not the browser page, not the absence of a visible error, and not a report from
+whoever watched it happen. When someone else is driving the publish, that line
+is the thing to ask for, verbatim.
+
+This is the same shape as the pasted-gates lesson above: a step whose failure
+is invisible at the point of failure, and only surfaces later as a tag pointing
+at a version nobody can install.
+
+### Post-publish verification, before the tag
+
+Two checks. Both are free, both take seconds, and both gate
+`git push origin v<x.y.z>`.
+
+**Read the packument directly, and read the timestamp — not just the version.**
+`npm view` can answer from cache, so ask the registry itself:
+
+```
+node -e "(async()=>{const j=await(await fetch('https://registry.npmjs.org/pion-mcp',{headers:{'cache-control':'no-cache'}})).json();const v=process.argv[1];console.log('latest  ',j['dist-tags'].latest);console.log('shasum  ',j.versions[v]?.dist.shasum??'ABSENT');console.log('modified',j.time.modified)})()" 0.4.1
+```
+
+A missing version is ambiguous on its own: unpublished and not-yet-propagated
+look identical. `time.modified` disambiguates them. In 0.4.1 it read three days
+stale while the version was absent — that is not CDN lag, that is an absent
+write, and it is what justified refusing to tag. A real propagation delay moves
+the timestamp; an unpublished version leaves it where it was.
+
+**Match the shasum against the dry run.** `npm pack --dry-run` prints a shasum
+before publishing and the registry publishes one after. When the two are equal,
+the artifact on the registry is byte-for-byte the one that was verified locally
+— the strongest *what shipped is what was checked* guarantee available here,
+and it costs nothing. Both read
+`079b05f452aada17b9173a59fac26acf6765851f` for 0.4.1.
+
+Run the dry run before publishing so there is something to compare against;
+without it this check has no left-hand side. A mismatch means the tree moved
+between verification and publish. Do not tag — find out what moved.
 
 ---
 
