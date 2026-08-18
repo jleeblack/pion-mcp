@@ -132,8 +132,8 @@ claude mcp add pion -- node /absolute/path/to/pion-mcp/dist/index.js
 
 | Variable | Default | Purpose |
 |---|---|---|
-| `PION_NETWORK` | `testnet` | Which chain the read tools query — `testnet` or `mainnet` |
-| `PION_HORIZON_URL` | derived from `PION_NETWORK` | Horizon base URL, overriding the above |
+| `PION_NETWORK` | `testnet` | Which chain the read tools query — `testnet` or `mainnet`. Mainnet is echoed as **REAL VALUE** in the startup banner |
+| `PION_HORIZON_URL` | derived from `PION_NETWORK` | Override for the Horizon base URL. Optional. If set alongside `PION_NETWORK` the two must name the same chain — a contradiction is a startup error, not a silent winner |
 | `PION_PLATFORM_URL` | `https://api.minepi.com` | Platform API base URL |
 | `PION_ENABLE_PAYMENTS` | unset (off) | Arms `send_payment` — see Tier C above |
 | `PION_MAX_PAYMENT_PI` | unset | Required per-payment ceiling when armed |

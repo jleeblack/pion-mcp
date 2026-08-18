@@ -58,8 +58,11 @@ if (process.argv.includes("--help") || process.argv.includes("-h")) {
       "       send_payment (only when explicitly armed — see below)",
       "",
       "Environment:",
-      "  PION_NETWORK       testnet (default) or mainnet — which chain the read tools query",
-      "  PION_HORIZON_URL   Horizon base URL, overriding PION_NETWORK's default",
+      "  PION_NETWORK       testnet (default) or mainnet — which chain the read tools",
+      "                     query. mainnet is echoed as REAL VALUE in the startup banner.",
+      "  PION_HORIZON_URL   Override for the Horizon base URL. Optional; derived from",
+      "                     PION_NETWORK when unset. If both are set they must name the",
+      "                     same chain — a contradiction is a startup error, not a guess.",
       "  PION_PLATFORM_URL  Platform API base URL (default: https://api.minepi.com)",
       "",
       "Reads work on both Pi chains. Payments do not: Pi restricts App-to-User",
@@ -83,35 +86,59 @@ if (NETWORK_ERROR) {
   process.exit(1);
 }
 
-const server = new McpServer(
-  { name: "pion-mcp", version: VERSION },
-  {
-    instructions:
-      `Pion exposes read-only Pi Network data. get_wallet_balance, get_account_payments, ` +
-      `and query_transaction are public ledger reads from Horizon at ${HORIZON_URL} ` +
-      `(${NETWORK.label}), needing no credentials. This server is reading ` +
-      `${NETWORK.label} — every result repeats it in its "network" field, and the two Pi ` +
-      `chains are separate ledgers, so an address funded on one does not exist on the ` +
-      `other. Amounts are decimal strings; Pi itself is ` +
-      'reported as the asset "PI", custom tokens as "CODE:ISSUER", and liquidity-pool ' +
-      'shares as "pool:ID". verify_user is different: it checks a user access token ' +
-      `against the Pi Platform API at ${PLATFORM_URL} and requires the caller to supply ` +
-      "that token. No tool here can send payments, sign anything, or spend from a wallet.",
-  },
-);
-
-registerGetWalletBalance(server, NETWORK);
-registerGetAccountPayments(server, NETWORK);
-registerQueryTransaction(server, NETWORK);
-registerVerifyUser(server);
-
 // Tier C is registered only when fully armed. A disarmed server does not
 // advertise a payment tool at all, so an agent cannot try to spend and cannot
 // be talked into thinking it might succeed.
 //
 // Passed the resolved network, not the URL: arming turns on what chain this
 // *is*, and a string containing "testnet" is not the same claim.
+//
+// Resolved BEFORE the server is constructed because the instructions below
+// state whether a spend tool exists, and that claim has to be built from the
+// same answer that decides whether one is registered. Until 0.4.2 the check
+// ran afterwards and the instructions said "no tool here can send payments"
+// unconditionally — false on an armed server, which is the one configuration
+// where being wrong about it costs money.
 const payments = checkPaymentsArming(NETWORK);
+
+/**
+ * Server instructions — the text a client places ahead of the tool catalog.
+ *
+ * Every session pays for this in context, so it carries only what changes a
+ * decision an agent is about to make, and nothing recoverable from a tool
+ * description it will read anyway.
+ *
+ * The cross-chain sentence is the reason this exists. It previously said an
+ * address funded on one chain "does not exist on the other" — measured false
+ * on 2026-08-14 (docs/FINDINGS.md finding 5): one address held 2.06 Pi on
+ * mainnet and 32.29938 Pi on testnet simultaneously. That wording invited
+ * exactly the wrong inference, that a wrong-chain read fails loudly. It does
+ * not; it returns a plausible number. An agent needs the true version before
+ * it reports a figure, not after.
+ */
+const instructions =
+  `Pion reads Pi Network chain data. get_wallet_balance, get_account_payments and ` +
+  `query_transaction are public Horizon reads at ${HORIZON_URL}, needing no ` +
+  `credentials. verify_user checks a caller-supplied user access token against the ` +
+  `Pi Platform API at ${PLATFORM_URL}. ` +
+  `This server reads ${NETWORK.label}, and every result carries a "network" field — ` +
+  `check it before trusting a figure. The two Pi chains are separate ledgers sharing ` +
+  `one address format, and the same address can hold different balances on each: a ` +
+  `wrong-chain read returns a plausible wrong number, not an error. Testnet Pi has no ` +
+  `monetary value. Amounts are decimal strings; Pi is "PI", tokens "CODE:ISSUER", ` +
+  `pool shares "pool:ID". ` +
+  (payments.armed
+    ? `send_payment is ARMED and can spend up to ${payments.config.maxAmountPi} Pi per ` +
+      `call from the app wallet on ${NETWORK.label}; every other tool is read-only.`
+    : "No tool here can send payments, sign anything, or spend from a wallet.");
+
+const server = new McpServer({ name: "pion-mcp", version: VERSION }, { instructions });
+
+registerGetWalletBalance(server, NETWORK);
+registerGetAccountPayments(server, NETWORK);
+registerQueryTransaction(server, NETWORK);
+registerVerifyUser(server);
+
 if (payments.armed) {
   registerSendPayment(server, payments.config);
 }

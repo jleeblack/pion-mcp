@@ -1,6 +1,6 @@
 {
   "name": "pion-mcp",
-  "version": "0.4.1",
+  "version": "0.4.2",
   "description": "Pion — Model Context Protocol (MCP) server for Pi Network. Read-only chain queries against Pi Mainnet and Testnet; payments are testnet-only.",
   "keywords": [
     "mcp",
