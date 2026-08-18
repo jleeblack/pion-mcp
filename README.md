@@ -3,6 +3,8 @@
 **Model Context Protocol server for Pi Network** — connect AI agents
 (Claude, Cursor, and any MCP-compatible client) to Pi Network chain data.
 
+[![pion-mcp MCP server](https://glama.ai/mcp/servers/jleeblack/pion-mcp/badges/card.svg)](https://glama.ai/mcp/servers/jleeblack/pion-mcp)
+
 > ⚠️ **Reads: both networks. Payments: testnet only.** The chain tools query Pi
 > Mainnet or Pi Testnet, selected with `PION_NETWORK`. `send_payment` moves real
 > funds, must be explicitly armed, and *cannot* be armed on mainnet — Pi
