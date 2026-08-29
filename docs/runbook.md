@@ -228,6 +228,26 @@ Practical consequences for this repo:
 - The most informative call is the first one made by new code, not the
   hundredth by old code.
 
+## Principle: describe capabilities by tier, not by version
+
+**Prose should say which tier a capability belongs to, never which version
+introduced it.** A version-dated description goes stale silently: nothing
+recompiles it, no suite asserts it, and it keeps reading as true long after it
+stopped being true.
+
+`site/index.html` told visitors "v0.1 talks only to public endpoints" through
+four minors and the entire arrival of Tier C — a payment path that does take
+keys. Nobody wrote anything false; the sentence was accurate when written and
+was never revisited, which is the whole failure mode. Describing the same thing
+by tier — the read tools need no configuration, payments are optional and off by
+default — stays true as versions land, because it describes the shape of the
+thing rather than a moment in its history.
+
+The inverse holds, and matters as much: history *should* be dated. The 0.4.x
+references throughout this file, and in the README's `Requirements` section, are
+correct precisely because they are claims about what happened rather than about
+what is. Date the postmortem, not the description.
+
 ## Secret exposure policy
 
 Decide by **what leaked**, **where it went**, and **which network it controls**
