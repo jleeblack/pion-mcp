@@ -450,6 +450,18 @@ the id validation, the status mapping, and the rule that completion is reported
 only on a 200. No real API contact, fake key. Run it before deploying a change
 to either function.
 
+`npm run signing` covers the other half: it rebuilds the exact transaction
+`send_payment` signs, with every input pinned, and compares the envelope and
+transaction hash against bytes recorded in the file. Offline, no credentials,
+cannot spend.
+
+It exists because the suites above all stub the network, so none of them can
+answer "did an SDK upgrade change what we put on the wire?". Diffing the signed
+XDR across 16.2.0 and 17.0.0 is what actually cleared that bump — identical
+envelope, identical hash — and the script is that diff kept as a standing check.
+Run it on any `@stellar/stellar-sdk` change. A failure means the bytes moved for
+identical inputs; find out which field before touching the constants.
+
 ---
 
 ## Mainnet reads — the v0.4 validation gate
@@ -530,10 +542,83 @@ return *different* ledger state from each chain.
 
 ---
 
+## Dependency bumps — the floor you inherit
+
+**A dependency's `engines` field silently becomes your floor. Nothing checks
+that your own field still tells the truth.**
+
+Found during the `@stellar/stellar-sdk` 16 -> 17 review (2026-08-28), by reading
+the installed dependency's metadata by hand. It had been wrong for two releases
+before anyone looked.
+
+`package.json` declared `"node": ">=18.17"` through 0.4.0, 0.4.1 and 0.4.2. The
+`@stellar/stellar-sdk` 16.x pinned across all three declared `">=22.0.0"` of its
+own. The real floor was 22.0.0 from the moment v16 landed, and we advertised
+18.17 to every consumer for three releases.
+
+Why nothing caught it:
+
+- **npm checks the installing package's field, not the tree's.** A consumer on
+  Node 18 installing pion-mcp is checked against *our* `>=18.17` and passes. The
+  transitive `>=22.0.0` produces an `EBADENGINE` warning at most, and warnings
+  scroll past. No error, no failed install, nothing to notice.
+- **Every suite and every local run was on Node 22+.** The floor we published
+  was never the floor anything was tested against, so no test could fail on it.
+  That is the incidental-coverage principle above, pointed at the environment
+  rather than at the data.
+- **The dependency's own bump looked routine.** v16 arrived in a Dependabot PR
+  like any other. An `engines` change lives in the dependency's metadata, not in
+  the diff the PR shows you — reviewing that PR could not have surfaced it.
+
+The general shape: `engines` is a promise about the whole installed tree, but it
+is written by hand about one package, and nothing reconciles the two. It only
+ever drifts in one direction — dependencies raise their floors, they do not
+lower them — so the error is always "we promised support we cannot deliver",
+never the reverse. That is the direction that reaches consumers.
+
+Corollary for the payment path specifically: the SDK is imported lazily inside
+the `send_payment` handler, so an inherited floor being wrong breaks neither
+startup nor the read tools. It breaks exactly one thing, and it is the thing
+that moves money.
+
+The gate this produced is in the release procedure below. It costs one command.
+
 ## Release procedure
 
 Verified through the 0.4.0 and 0.4.1 publishes. Every rule below was learned by
 breaking it in one of those releases, not by foresight.
+
+### Reconcile the declared engines floor against the tree
+
+**Standing gate on any release whose dependencies moved.** Our `engines.node`
+must be at least as high as every dependency's, and nothing enforces that
+automatically — see "Dependency bumps — the floor you inherit" above for how it
+went wrong for three releases.
+
+One command, run after `npm ci` and before the version bump:
+
+```
+node -e "const fs=require('fs'),p=require('./package.json');console.log('  '+'pion-mcp (declared)'.padEnd(32),p.engines?.node??'(none)');for(const d of Object.keys(p.dependencies??{})){let e;try{e=JSON.parse(fs.readFileSync('./node_modules/'+d+'/package.json','utf8')).engines?.node??'(none)'}catch{e='(not installed)'}console.log('  '+d.padEnd(32),e)}"
+```
+
+Read it as one rule: **the first line must not be lower than any line below
+it.** At 0.5.0 it reads
+
+```
+  pion-mcp (declared)              >=22.12.0
+  @modelcontextprotocol/sdk        >=18
+  @stellar/stellar-sdk             >=22.12.0
+  zod                              (none)
+```
+
+which is correct — we are level with the highest floor we inherit. The same
+command at 0.4.2 would have shown `>=18.17` above a `>=22.0.0`, which is the
+failure: a floor we could not honour.
+
+Raising our own floor narrows what consumers can install, so it is a breaking
+change and forces at least a minor. Take that cost when it appears rather than
+carrying a false promise — a floor that is quietly wrong is not cheaper, it is
+just deferred onto whoever installs on the runtime we claimed to support.
 
 ### Gates must be pasted one at a time
 

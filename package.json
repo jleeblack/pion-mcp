@@ -1,6 +1,6 @@
 {
   "name": "pion-mcp",
-  "version": "0.4.2",
+  "version": "0.5.0",
   "description": "Pion — Model Context Protocol (MCP) server for Pi Network. Read-only chain queries against Pi Mainnet and Testnet; payments are testnet-only.",
   "keywords": [
     "mcp",
@@ -26,7 +26,7 @@
     "dist"
   ],
   "engines": {
-    "node": ">=18.17"
+    "node": ">=22.12.0"
   },
   "scripts": {
     "build": "tsc",
@@ -38,6 +38,7 @@
     "crossnet": "node scripts/crossnet-test.mjs",
     "arming": "node scripts/arming-test.mjs",
     "u2a": "node scripts/u2a-test.mjs",
+    "signing": "node scripts/signing-test.mjs",
     "incomplete": "node scripts/incomplete.mjs",
     "probe:a2u": "node scripts/probe-a2u.mjs",
     "diagnose:a2u": "node scripts/diagnose-a2u.mjs",
