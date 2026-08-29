@@ -615,6 +615,24 @@ which is correct — we are level with the highest floor we inherit. The same
 command at 0.4.2 would have shown `>=18.17` above a `>=22.0.0`, which is the
 failure: a floor we could not honour.
 
+**`devDependencies` are deliberately out of scope, and the omission is load
+bearing — do not "fix" it.** The gate answers one question: what must a
+*consumer* be running. Consumers never install our devDependencies. `files` is
+`["dist"]`, so the published tarball is build output plus `package.json`, and
+npm installs only `dependencies` from it. A devDependency's floor therefore
+cannot constrain anyone downstream.
+
+Folding them in would not merely add noise, it would invert the gate. TypeScript
+raising its floor to Node 24 would make this check demand we publish `>=24`,
+narrowing what consumers may install to satisfy a compiler they never receive —
+the same false promise as 0.4.2, aimed the other way. The gate would be arguing
+for a lie it was written to catch.
+
+devDependency floors do still matter; they just answer a different question,
+about the machine that builds and tests. If one outgrows the environment, that
+is a CI and contributor-setup problem, and it belongs wherever that is tracked
+— not in the number we publish.
+
 Raising our own floor narrows what consumers can install, so it is a breaking
 change and forces at least a minor. Take that cost when it appears rather than
 carrying a false promise — a floor that is quietly wrong is not cheaper, it is
