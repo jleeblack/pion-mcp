@@ -99,6 +99,35 @@ a payment. The tool reports exactly which step failed, whether funds left the
 wallet, and the payment id needed to clean up. A blind retry could pay twice,
 so it refuses to guess.
 
+## Requirements
+
+**Node.js 22.12.0 or newer.**
+
+This floor is higher than earlier releases advertised, and correcting it is
+the reason 0.5.0 is a minor rather than a patch. Through 0.4.2 `package.json`
+declared `>=18.17`, which was never true: the `@stellar/stellar-sdk` 16.x that
+0.4.x pinned already declared `>=22.0.0` of its own, so Node 18 and 20 were
+outside what the dependency supported the whole time. Nothing surfaced it,
+because our own field is the one npm checks an install against — a package
+cannot be warned about a floor it is itself misreporting.
+
+0.5.0 moves to `@stellar/stellar-sdk` 17.x, whose floor is `>=22.12.0` (its
+CommonJS build requires ESM-only dependencies, and `require(esm)` is only
+unflagged from 22.12.0), and sets our declared floor to match it honestly.
+
+If you are on Node 18 or 20, what this actually means:
+
+- The chain read tools and `verify_user` never load the Stellar SDK — it is
+  imported lazily, inside the payment handler — so those paths are unlikely
+  to be affected in practice.
+- **`send_payment` is the part that genuinely needs 22.12.0.** It is also the
+  only part that moves funds, which is why the floor is stated here rather
+  than left to fail somewhere expensive.
+
+Upgrading Node is the supported fix. Pinning 0.4.2 preserves the old declared
+floor but not a working payment path — that release depends on an SDK that
+did not support your runtime either.
+
 ## Usage
 
 MCP clients can run it straight from npm — no install step:
@@ -161,6 +190,7 @@ npm run smoke          # end-to-end against live testnet
 npm run smoke:mainnet  # the same checks against live mainnet
 npm run crossnet       # proves the two chains are actually distinguished
 npm run arming         # Tier C guards and spend cap (no credentials needed)
+npm run signing        # golden-XDR check on the A2U signing path (offline)
 ```
 
 `npm run smoke` spawns the server over stdio as a real MCP client, discovers a
@@ -183,6 +213,14 @@ server still refuses to advertise it, and that neither secret leaks into
 a result. It uses a freshly generated, never-funded keypair. The one live call
 it makes is a deliberately-rejected create against the Pi API, which proves the
 first failure stage end to end.
+
+`npm run signing` rebuilds the exact transaction `send_payment` signs, with
+every input pinned, and compares the envelope and hash against bytes recorded
+in the file. It is offline and cannot spend. Its job is dependency bumps: the
+other suites all stub the network, so none of them can tell you whether an SDK
+upgrade changed what you put on the wire. Run it on any `@stellar/stellar-sdk`
+change — a failure means the bytes moved, and the constants should not be
+refreshed until you know why.
 
 ## Known gaps
 
