@@ -603,6 +603,38 @@ that moves money.
 
 The gate this produced is in the release procedure below. It costs one command.
 
+## Branch protection — `main` takes changes only through a PR
+
+Ruleset **"main protection"**, active on the default branch since 2026-08-28:
+pull request required, no deletion, no non-fast-forward. Zero required
+approving reviews, so a PR can be self-merged — the rule enforces the *route*,
+not review. Squash and rebase only, no merge commits.
+
+`bypass_actors` is **empty**. The repo owner has no exemption, which is the
+property that makes this a gate rather than a courtesy: there is no role you can
+be in that lets the direct push through.
+
+**First live firing — 2026-08-28, within the hour of being configured.** During
+the 0.5.0 close-out, a docs-only fix to the stale quickstart line was committed
+onto local `main` and pushed directly, because the instruction named `main` as
+the target and neither party checked the route against the ruleset first. The
+push was rejected outright:
+
+```
+remote: - Changes must be made through a pull request.
+ ! [remote rejected] main -> main (push declined due to repository rule violations)
+```
+
+Nothing landed and nothing was forced. Recovery: preserve the commit on a
+branch, `git reset --hard origin/main`, open the PR — the same commit by the
+required route, no content lost.
+
+Recorded because a gate's first catch is part of its provenance. This one caught
+a wrong route unrehearsed, roughly an hour after it existed, which is stronger
+evidence that it works than a deliberate drill would have been — the drill tests
+the rule, the accident tests whether anyone can get around it while not thinking
+about it.
+
 ## Release procedure
 
 Verified through the 0.4.0 and 0.4.1 publishes. Every rule below was learned by
