@@ -12,6 +12,7 @@
  */
 import { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import { StdioClientTransport } from "@modelcontextprotocol/sdk/client/stdio.js";
+import { Keypair } from "@stellar/stellar-sdk";
 
 import { resolveNetwork } from "../dist/networks.js";
 
@@ -73,21 +74,49 @@ await client.connect(
 const { tools } = await client.listTools();
 console.log(`\nTools advertised: ${tools.map((t) => t.name).join(", ")}`);
 
+// An absent account must surface Horizon's 404 path, not a 400 for a malformed
+// address. Both are errors, so "did it error?" alone cannot tell them apart —
+// which is how this check silently stopped covering absent accounts.
+function expectNotFound(result) {
+  const text = result.content?.[0]?.text ?? "";
+  return text.includes("Not found on")
+    ? null
+    : `expected the not-found message, got: ${text.split("\n")[0]}`;
+}
+
 const checks = [
   ["get_wallet_balance", { address }],
   ["get_account_payments", { address, limit: 3 }],
   ["query_transaction", { hash }],
-  // Negative case: a well-formed address that does not exist on-chain.
-  ["get_wallet_balance (unknown account)", { address: `G${"A".repeat(55)}` }],
+  // Negative case: a genuinely well-formed address — a random keypair, so the
+  // checksum is valid — that was never funded, which is what makes Horizon
+  // answer 404. A hand-built string like `G` + 55 `A`s fails the checksum and
+  // comes back 400, exercising input validation rather than the absent-account
+  // path this check exists to cover.
+  [
+    "get_wallet_balance (unknown account)",
+    { address: Keypair.random().publicKey() },
+    expectNotFound,
+  ],
 ];
 
 let failures = 0;
-for (const [label, args] of checks) {
+for (const [label, args, expectation] of checks) {
   const name = label.split(" ")[0];
   const expectError = label.includes("unknown");
   const result = await client.callTool({ name, arguments: args });
   const succeeded = summarize(label, result);
-  if (succeeded === expectError) failures++;
+  if (succeeded === expectError) {
+    failures++;
+    continue;
+  }
+  const problem = expectation?.(result);
+  if (problem) {
+    console.log(`   ✗ ${problem}`);
+    failures++;
+  } else if (expectation) {
+    console.log("   ✓ absent account reported as not-found, not as malformed input");
+  }
 }
 
 // verify_user: a rejected token must come back as a normal result carrying
